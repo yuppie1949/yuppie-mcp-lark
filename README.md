@@ -1,32 +1,31 @@
-# yuppie-mcp-mssql
+# yuppie-mcp-lark
 
-Microsoft SQL Server MCP Server — 让 AI 助手能够查询和操作 SQL Server，**无需安装任何本地驱动**（纯 Python 实现）。
+飞书（Lark / Feishu）MCP Server — 让 AI 助手通过 MCP 协议操作飞书消息、多维表格、电子表格。
 
 ## 特性
 
-- 无驱动：基于 `python-tds`，无需 ODBC 驱动或 FreeTDS
-- 权限控制：INSERT / UPDATE / DELETE / DDL 各自独立开关，默认全只读
-- 支持 stdio 和 Streamable HTTP 两种传输模式
+- 消息：发送单聊/群聊消息
+- 多维表格：搜索记录（支持分页、排序、过滤）
+- 电子表格：元信息查询、工作表增删复制、范围读写、追加数据、删除行列
+- 鉴权：基于飞书应用 `tenant_access_token`，自动刷新
+- 部署：仅 stdio，本地 AI 助手友好
 
 ## 快速开始
 
 ### Claude Code
 
-在项目 `.mcp.json` 或全局配置中添加：
+在 `.mcp.json` 中添加：
 
 ```json
 {
   "mcpServers": {
-    "mssql": {
+    "lark": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["yuppie-mcp-mssql"],
+      "args": ["yuppie-mcp-lark"],
       "env": {
-        "DB_HOST": "localhost",
-        "DB_PORT": "1433",
-        "DB_NAME": "master",
-        "DB_USER": "sa",
-        "DB_PASSWORD": "your_password"
+        "LARK_APP_ID": "cli_xxx",
+        "LARK_APP_SECRET": "xxx"
       }
     }
   }
@@ -35,198 +34,46 @@ Microsoft SQL Server MCP Server — 让 AI 助手能够查询和操作 SQL Serve
 
 ### Cursor
 
-在 `~/.cursor/mcp.json` 中添加：
+在 `~/.cursor/mcp.json` 中添加同上配置。
 
-```json
-{
-  "mcpServers": {
-    "mssql": {
-      "command": "uvx",
-      "args": ["yuppie-mcp-mssql"],
-      "env": {
-        "DB_HOST": "localhost",
-        "DB_USER": "sa",
-        "DB_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
+### Cherry Studio / Claude Desktop / OpenCode
 
-### Cherry Studio
-
-打开 **设置** → **MCP Servers**，粘贴以下 JSON 配置：
-
-```json
-{
-  "mcpServers": {
-    "mssql": {
-      "command": "uvx",
-      "args": ["yuppie-mcp-mssql"],
-      "env": {
-        "DB_HOST": "your_host",
-        "DB_PORT": "1433",
-        "DB_NAME": "your_database",
-        "DB_USER": "your_username",
-        "DB_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
-### OpenCode
-
-在 `~/.opencode/opencode.json` 中添加：
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "mssql": {
-      "type": "local",
-      "command": ["uvx", "yuppie-mcp-mssql"],
-      "enabled": true,
-      "environment": {
-        "DB_HOST": "localhost",
-        "DB_USER": "sa",
-        "DB_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
-### Claude Desktop
-
-在 `claude_desktop_config.json` 中添加：
-
-```json
-{
-  "mcpServers": {
-    "mssql": {
-      "command": "uvx",
-      "args": ["yuppie-mcp-mssql"],
-      "env": {
-        "DB_HOST": "localhost",
-        "DB_USER": "sa",
-        "DB_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
+参照上方 env 字段，按各自 MCP 配置格式填入即可。
 
 ## 环境变量
 
-### 连接配置
-
-| 变量 | 说明 | 必填 | 默认值 |
-|------|------|------|--------|
-| `DB_HOST` | SQL Server 主机地址 | 是 | `localhost` |
-| `DB_PORT` | SQL Server 端口 | 否 | `1433` |
-| `DB_NAME` | 默认数据库 | 否 | `master` |
-| `DB_USER` | 用户名 | 是 | - |
-| `DB_PASSWORD` | 密码 | 是 | - |
-
-### 权限控制
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `DB_ALLOW_INSERT` | 是否允许 INSERT | `false` |
-| `DB_ALLOW_UPDATE` | 是否允许 UPDATE | `false` |
-| `DB_ALLOW_DELETE` | 是否允许 DELETE | `false` |
-| `DB_ALLOW_DDL` | 是否允许 DDL（CREATE/DROP/ALTER/TRUNCATE） | `false` |
-
-### 传输模式
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `MCP_TRANSPORT` | 传输模式：`stdio` 或 `streamable_http` | `stdio` |
-| `MCP_PORT` | HTTP 模式端口 | `8000` |
-
-## 测试与调试
-
-### 使用 MCP Inspector
-
-在项目根目录创建 `.env` 文件配置数据库连接：
-
-```bash
-DB_HOST=your_host
-DB_PORT=1433
-DB_NAME=your_database
-DB_USER=your_username
-DB_PASSWORD=your_password
-```
-
-然后启动 MCP Inspector（会自动读取 `.env` 文件）：
-
-```bash
-npx @modelcontextprotocol/inspector uv run yuppie-mcp-mssql
-```
-
-Inspector 会打开一个网页界面，可以：
-- 查看所有可用工具
-- 直接调用工具测试
-- 查看请求/响应日志
-- 测试环境变量
-
-### 运行测试
-
-```bash
-# 安装开发依赖
-uv pip install -e ".[dev]"
-
-# 运行测试
-uv run pytest -v
-```
+| 变量 | 必填 | 默认值 | 说明 |
+|------|------|--------|------|
+| `LARK_APP_ID` | 是 | - | 飞书应用 App ID |
+| `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
+| `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
 ## 可用工具
 
 | 工具 | 说明 |
 |------|------|
-| `mssql_get_db_info` | 获取当前数据库基本信息（版本、服务器名、当前用户等） |
-| `mssql_execute_sql` | 执行 SQL 语句（SELECT 始终允许，写操作受环境变量控制） |
-| `mssql_list_tables` | 列出当前数据库下的所有表 |
-| `mssql_describe_table` | 获取表的列结构（列名、类型、可空性等） |
-| `mssql_export_to_csv` | 将查询结果导出到 CSV 文件（支持自定义分隔符） |
+| `lark_send_message` | 发送消息 |
+| `lark_search_records` | 搜索多维表格记录 |
+| `lark_get_spreadsheet_metainfo` | 获取电子表格元信息 |
+| `lark_add_sheet` | 添加工作表 |
+| `lark_delete_sheet` | 删除工作表 |
+| `lark_copy_sheet` | 复制工作表 |
+| `lark_read_range` | 读取范围数据 |
+| `lark_write_range` | 写入范围数据 |
+| `lark_append_data` | 追加数据 |
+| `lark_delete_dimension` | 删除行列 |
 
-## 提示示例
+## 测试与调试
 
-### 基础查询
-
-```
-查一下当前连接的是哪个数据库，SQL Server 版本是多少
-```
-
-```
-列出当前数据库里所有的表
-```
-
-```
-描述一下 dbo.Orders 表的结构
+```bash
+uv pip install -e ".[dev]"
+uv run pytest -v
 ```
 
-```
-查询 dbo.Orders 表中最近 10 条记录
-```
+使用 MCP Inspector 调试（需先在 `.env` 配置 `LARK_APP_ID` / `LARK_APP_SECRET`）：
 
-```
-统计 dbo.Orders 表中每个状态的订单数量，按数量降序排列
-```
-
-### 导出功能
-
-```
-将查询结果导出到 CSV 文件（逗号分隔，自动创建目录）
-```
-
-```
-导出查询结果为 TSV 格式（制表符分隔，适合 Excel 打开）
-```
-
-```
-导出数据到自定义路径，使用分号分隔
+```bash
+npx @modelcontextprotocol/inspector uv run yuppie-mcp-lark
 ```
 
 ## License

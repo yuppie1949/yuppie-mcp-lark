@@ -35,7 +35,7 @@ echo -e "${GREEN}✓ 版本号已更新为 ${NEW_VERSION}${NC}"
 
 # 确认发布
 echo -e "${YELLOW}即将发布到 PyPI:${NC}"
-echo "  包名: yuppie-mcp-mssql"
+echo "  包名: yuppie-mcp-lark"
 echo "  版本: ${NEW_VERSION}"
 read -p "确认发布? (y/N): " CONFIRM
 
@@ -53,4 +53,4 @@ echo -e "${GREEN}正在发布到 PyPI...${NC}"
 UV_PUBLISH_TOKEN="$UV_PUBLISH_TOKEN" uv publish
 
 echo -e "${GREEN}=== 发布完成 ===${NC}"
-echo -e "${GREEN}查看: https://pypi.org/project/yuppie-mcp-mssql/${NC}"
+echo -e "${GREEN}查看: https://pypi.org/project/yuppie-mcp-lark/${NC}"
