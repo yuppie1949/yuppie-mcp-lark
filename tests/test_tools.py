@@ -35,6 +35,18 @@ def test_send_message_strips_whitespace() -> None:
     assert args.receive_id == "ou_xxx"
 
 
+def test_send_message_rejects_invalid_msg_type() -> None:
+    with pytest.raises(ValidationError):
+        SendMessageInput(receive_id="ou_xxx", content="{}", msg_type="invalid_type")
+
+
+def test_send_message_accepts_uuid() -> None:
+    args = SendMessageInput(
+        receive_id="ou_xxx", content='{"text":"hi"}', uuid="a0d69e20-1dd1-458b-k525-dfeca4015204"
+    )
+    assert args.uuid == "a0d69e20-1dd1-458b-k525-dfeca4015204"
+
+
 def test_send_message_forbids_extra() -> None:
     with pytest.raises(ValidationError):
         SendMessageInput(

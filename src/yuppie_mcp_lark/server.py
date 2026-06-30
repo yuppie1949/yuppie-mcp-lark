@@ -1,7 +1,7 @@
 """飞书 MCP Server 主入口"""
 
 import os
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
@@ -36,16 +36,44 @@ mcp = FastMCP("lark_mcp")
 )
 async def tool_send_message(
     receive_id: Annotated[str, Field(description="接收者 ID", min_length=1)],
-    content: Annotated[str, Field(description="消息内容 JSON 字符串", min_length=1)],
-    msg_type: Annotated[str, Field(description="消息类型，默认 text")] = "text",
+    content: Annotated[
+        str,
+        Field(
+            description="消息内容 JSON 字符串，文本≤150KB，卡片/富文本≤30KB",
+            min_length=1,
+            max_length=30000,
+        ),
+    ],
+    msg_type: Annotated[
+        Literal[
+            "text", "post", "image", "file", "audio", "media", "interactive",
+        ],
+        Field(description="消息类型，默认 text"),
+    ] = "text",
     receive_id_type: Annotated[
         str,
         Field(description="ID 类型：open_id / user_id / union_id / chat_id"),
     ] = "open_id",
+    uuid: Annotated[
+        str | None,
+        Field(description="去重序列号，相同 uuid 在 1 小时内至多发送一条消息", max_length=50),
+    ] = None,
 ) -> str:
     """发送消息给单个用户或群。
 
-    content 是 JSON 字符串，例如 text 类型消息：'{"text":"你好"}'。
+    content 是 JSON 字符串，不同 msg_type 的 content 格式：
+
+    1. text（文本）:
+       {"text":"你好"}
+
+    2. interactive（卡片，支持 markdown、at 等）:
+       {"elements":[{"tag":"markdown","content":"普通文本\\n\\n<at id=\\"all\\"></at>"}]}
+
+    3. post（富文本）:
+       {"zh_cn":{"title":"标题","content":[[{"tag":"text","text":"内容"}]]}}
+
+    4. image（图片）:
+       {"image_key":"img_xxxxx"}
     """
     return await messages.send_message(
         SendMessageInput(
@@ -53,6 +81,7 @@ async def tool_send_message(
             msg_type=msg_type,
             content=content,
             receive_id_type=receive_id_type,
+            uuid=uuid,
         )
     )
 

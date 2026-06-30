@@ -40,6 +40,7 @@ class _LarkMixinProtocol(Protocol):
         content: str,
         *,
         receive_id_type: str = ...,
+        uuid: str | None = ...,
     ) -> dict[str, Any]: ...
 
 

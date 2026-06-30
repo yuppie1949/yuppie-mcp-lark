@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..utils.config import LarkConfig
@@ -22,10 +24,20 @@ class SendMessageInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     receive_id: str = Field(..., min_length=1, description="接收者 ID")
-    msg_type: str = Field("text", description="消息类型，默认 text")
-    content: str = Field(..., min_length=1, description="消息内容 JSON 字符串")
+    msg_type: Literal[
+        "text", "post", "image", "file", "audio", "media", "interactive",
+    ] = Field("text", description="消息类型，默认 text")
+    content: str = Field(
+        ..., min_length=1, max_length=30000,
+        description="消息内容 JSON 字符串，文本≤150KB，卡片/富文本≤30KB",
+    )
     receive_id_type: str = Field(
         "open_id", description="ID 类型：open_id / user_id / union_id / chat_id"
+    )
+    uuid: str | None = Field(
+        None,
+        max_length=50,
+        description="去重序列号，相同 uuid 在 1 小时内至多发送一条消息",
     )
 
 
@@ -37,6 +49,7 @@ async def send_message(args: SendMessageInput) -> str:
             args.msg_type,
             args.content,
             receive_id_type=args.receive_id_type,
+            uuid=args.uuid,
         )
         return (
             "✅ 发送成功\n\n"
