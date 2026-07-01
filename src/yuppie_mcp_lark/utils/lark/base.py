@@ -49,6 +49,9 @@ class _LarkMixinProtocol(Protocol):
     async def write_range(
         self, spreadsheet_token: str, range_str: str, values: list[list[Any]]
     ) -> dict[str, Any]: ...
+    async def write_multiple_range(
+        self, spreadsheet_token: str, value_ranges: list[dict[str, Any]]
+    ) -> dict[str, Any]: ...
     async def append_data(
         self, spreadsheet_token: str, sheet_id: str, values: list[list[Any]]
     ) -> None: ...
@@ -70,9 +73,7 @@ class _LarkMixinProtocol(Protocol):
     async def _get_sheet_dimensions(
         self, spreadsheet_token: str, sheet_id: str
     ) -> tuple[int, str]: ...
-    async def batch_write_range(
-        self, spreadsheet_token: str, value_ranges: list[dict[str, Any]]
-    ) -> dict[str, Any]: ...
+
 
     # ── QuickSheetsMixin ──
     async def quick_sheets_filter_columns(
@@ -107,6 +108,9 @@ class _LarkMixinProtocol(Protocol):
         update_data: list[dict[str, Any]],
         columns: list[str] | None = ...,
     ) -> None: ...
+    async def _ensure_column(
+        self, spreadsheet_token: str, sheet_id: str, column_name: str
+    ) -> str: ...
     async def quick_sheets_batch_append(
         self,
         spreadsheet_token: str,

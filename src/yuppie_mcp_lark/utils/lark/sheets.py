@@ -96,6 +96,25 @@ class SheetsMixin:
             json_data={"valueRange": {"range": range_str, "values": values}},
         )
 
+    async def write_multiple_range(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        value_ranges: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """向电子表格某个工作表的多个指定范围中写入数据。若指定范围已内有数据，将被新写入的数据覆盖。
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/write-data-to-multiple-ranges
+
+        使用限制:
+            单次写入数据不得超过 5000 行、100列。
+            每个单元格不超过 50,000 字符，推荐不超过 40,000 字符。
+        """
+        return await self._request(
+            "POST",
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
+            json_data={"valueRanges": value_ranges},
+        )
+
     async def append_data(
         self: _LarkMixinProtocol, spreadsheet_token: str, sheet_id: str, values: list[list[Any]]
     ) -> None:
@@ -115,25 +134,6 @@ class SheetsMixin:
                     "values": values,
                 }
             },
-        )
-
-    async def batch_write_range(
-        self: _LarkMixinProtocol,
-        spreadsheet_token: str,
-        value_ranges: list[dict[str, Any]],
-    ) -> dict[str, Any]:
-        """向电子表格某个工作表的多个指定范围中写入数据。若指定范围已内有数据，将被新写入的数据覆盖。
-
-        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/write-data-to-multiple-ranges
-
-        使用限制:
-            单次写入数据不得超过 5000 行、100列。
-            每个单元格不超过 50,000 字符，推荐不超过 40,000 字符。
-        """
-        return await self._request(
-            "POST",
-            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
-            json_data={"valueRanges": value_ranges},
         )
 
     async def delete_dimension(
@@ -161,20 +161,6 @@ class SheetsMixin:
                 },
             },
         )
-
-    # ── 辅助方法 ──
-
-    async def _get_sheet_dimensions(
-        self: _LarkMixinProtocol, spreadsheet_token: str, sheet_id: str
-    ) -> tuple[int, str]:
-        """获取工作表实际列数和末尾列字母，返回 (col_count, end_col)"""
-        meta = await self.get_metainfo(spreadsheet_token)
-        for s in meta.get("sheets", []):
-            if str(s.get("sheetId", "")) == sheet_id:
-                col_count = s.get("columnCount", 0)
-                if col_count > 0:
-                    return col_count, self._index_to_letter(col_count - 1)
-        return 0, ""
 
     # ── 工作表查找 ──
 
@@ -206,6 +192,53 @@ class SheetsMixin:
             if s.get("title") == sheet_title:
                 return str(s.get("sheetId", ""))
         raise Exception(f"未找到工作表 '{sheet_title}'")
+
+    # ── 辅助方法 ──
+
+    async def _get_sheet_dimensions(
+        self: _LarkMixinProtocol, spreadsheet_token: str, sheet_id: str
+    ) -> tuple[int, str]:
+        """获取工作表实际列数和末尾列字母，返回 (col_count, end_col)"""
+        meta = await self.get_metainfo(spreadsheet_token)
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                col_count = s.get("columnCount", 0)
+                if col_count > 0:
+                    return col_count, self._index_to_letter(col_count - 1)
+        return 0, ""
+
+    async def _ensure_column(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        column_name: str,
+    ) -> str:
+        """确保列存在，不存在则在表头末尾自动创建，返回列字母"""
+        try:
+            return await self._resolve_column_letter(
+                spreadsheet_token, sheet_id, column_name
+            )
+        except Exception:
+            col_count, end_col = await self._get_sheet_dimensions(
+                spreadsheet_token, sheet_id
+            )
+            if col_count > 0:
+                headers = await self.read_range(
+                    spreadsheet_token, f"{sheet_id}!A1:{end_col}1"
+                )
+                existing = headers[0] if headers else []
+                while existing and existing[-1] in (None, ""):
+                    existing.pop()
+                col_letter = self._index_to_letter(len(existing))
+            else:
+                col_letter = self._index_to_letter(0)
+            await self.write_range(
+                spreadsheet_token,
+                f"{sheet_id}!{col_letter}1:{col_letter}1",
+                [[column_name]],
+            )
+            return col_letter
+
 
     async def _resolve_column_letter(
         self: _LarkMixinProtocol,

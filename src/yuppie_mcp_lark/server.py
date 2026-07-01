@@ -330,7 +330,7 @@ async def tool_delete_dimension(
         openWorldHint=True,
     ),
 )
-async def tool_filter_sheet_columns(
+async def tool_quick_sheets_filter_columns(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     keep_columns: Annotated[
@@ -346,7 +346,6 @@ async def tool_filter_sheet_columns(
         )
     )
 
-
 @mcp.tool(
     name="lark_quick_set_batch_index",
     annotations=ToolAnnotations(
@@ -357,7 +356,7 @@ async def tool_filter_sheet_columns(
         openWorldHint=True,
     ),
 )
-async def tool_set_batch_index(
+async def tool_quick_sheets_set_batch_index(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     batch_column: Annotated[
@@ -386,7 +385,7 @@ async def tool_set_batch_index(
         openWorldHint=True,
     ),
 )
-async def tool_set_header_list(
+async def tool_quick_sheets_set_header_list(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     header_list: Annotated[list[str], Field(description="新表头列表", min_length=1)],
@@ -415,7 +414,7 @@ async def tool_set_header_list(
         openWorldHint=True,
     ),
 )
-async def tool_get_column_last_value(
+async def tool_quick_sheets_get_column_last_value(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     column_name: Annotated[str, Field(description="列名，将在表头中查找其位置", min_length=1)],
@@ -440,7 +439,7 @@ async def tool_get_column_last_value(
         openWorldHint=True,
     ),
 )
-async def tool_get_rows_by_batch(
+async def tool_quick_sheets_get_rows_by_batch(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     batch_id: Annotated[int, Field(description="批次号，从 1 开始", ge=1)],
@@ -467,7 +466,7 @@ async def tool_get_rows_by_batch(
         openWorldHint=True,
     ),
 )
-async def tool_batch_update(
+async def tool_quick_sheets_batch_update(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     update_data: Annotated[
@@ -500,7 +499,7 @@ async def tool_batch_update(
         openWorldHint=True,
     ),
 )
-async def tool_batch_append(
+async def tool_quick_sheets_batch_append(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     data: Annotated[list[dict[str, Any]], Field(description="要追加的数据，每行一个 dict")],
@@ -517,9 +516,6 @@ async def tool_batch_append(
             batch_interval=batch_interval,
         )
     )
-
-
-
 
 def main() -> None:
     transport = os.getenv("MCP_TRANSPORT", "stdio")

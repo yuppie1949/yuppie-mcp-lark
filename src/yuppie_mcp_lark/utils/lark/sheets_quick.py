@@ -70,27 +70,9 @@ class QuickSheetsMixin:
         batch_size: int = 10,
     ) -> None:
         """按列设置批次索引，列不存在时自动创建"""
-        try:
-            col_letter = await self._resolve_column_letter(
-                spreadsheet_token, sheet_id, batch_column
-            )
-        except Exception:
-            col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
-            if col_count > 0:
-                headers = await self.read_range(
-                    spreadsheet_token, f"{sheet_id}!A1:{end_col}1"
-                )
-                existing = headers[0] if headers else []
-                while existing and existing[-1] in (None, ""):
-                    existing.pop()
-                col_letter = self._index_to_letter(len(existing))
-            else:
-                col_letter = self._index_to_letter(0)
-            await self.write_range(
-                spreadsheet_token,
-                f"{sheet_id}!{col_letter}1:{col_letter}1",
-                [[batch_column]],
-            )
+        col_letter = await self._ensure_column(
+            spreadsheet_token, sheet_id, batch_column
+        )
 
         data = await self.read_range(spreadsheet_token, f"{sheet_id}!A:A")
 
@@ -116,7 +98,7 @@ class QuickSheetsMixin:
             vals = [[str(batch_val)] for _ in group_list]
             value_ranges.append({"range": rng, "values": vals})
 
-        await self.batch_write_range(
+        await self.write_multiple_range(
             spreadsheet_token,
             value_ranges,
         )
@@ -233,7 +215,7 @@ class QuickSheetsMixin:
             value_ranges.append({"range": range_str, "values": values})
 
         if value_ranges:
-            await self.batch_write_range(spreadsheet_token, value_ranges)
+            await self.write_multiple_range(spreadsheet_token, value_ranges)
 
     async def quick_sheets_batch_append(
         self: _LarkMixinProtocol,
