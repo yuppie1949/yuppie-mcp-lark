@@ -93,6 +93,15 @@ class BatchAppendInput(BaseModel):
     batch_interval: int = Field(2, ge=0, le=30, description="每批追加间隔秒数，默认 2")
 
 
+class BatchAppendFromFileInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    sheet_id: str = Field(..., min_length=1, description="工作表 ID")
+    file_path: str = Field(..., min_length=1, description="本地 CSV 文件路径")
+    batch_size: int = Field(5000, ge=1, le=5000, description="每批写入行数，默认 5000")
+
+
 async def quick_sheets_filter_columns(args: FilterSheetColumnsInput) -> str:
     try:
         _t0 = time.time()
@@ -232,3 +241,23 @@ async def quick_sheets_batch_append(args: BatchAppendInput) -> str:
         )
     except Exception as e:
         return f"❌ 批量追加失败：{e}"
+
+
+async def quick_sheets_batch_append_from_file(args: BatchAppendFromFileInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        await client.quick_sheets_batch_append_from_file(
+            args.spreadsheet_token,
+            args.sheet_id,
+            args.file_path,
+            batch_size=args.batch_size,
+        )
+        _elapsed = time.time() - _t0
+        return (
+            f"✅ 从文件追加完成\n\n"
+            f"- **文件**: `{args.file_path}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
+        )
+    except Exception as e:
+        return f"❌ 从文件追加失败：{e}"

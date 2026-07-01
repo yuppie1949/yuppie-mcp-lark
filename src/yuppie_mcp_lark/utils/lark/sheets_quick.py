@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import csv
+import os
 from itertools import groupby
 from typing import Any
 
@@ -216,6 +218,43 @@ class QuickSheetsMixin:
 
         if value_ranges:
             await self.write_multiple_range(spreadsheet_token, value_ranges)
+
+    async def quick_sheets_batch_append_from_file(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        file_path: str,
+        *,
+        batch_size: int = 500,
+        batch_interval: int = 2,
+    ) -> None:
+        """从本地 CSV 文件批量追加数据到工作表
+
+        CSV 第一行为表头，后续行为数据行。
+        数据追加到工作表现有数据之后，表头不会写入（需提前设置好）。
+        解析后委托 quick_sheets_batch_append 执行写入。
+        """
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"文件不存在: {file_path}")
+
+        with open(file_path, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            fieldnames = reader.fieldnames
+            if not fieldnames:
+                raise ValueError("CSV 文件缺少表头")
+            # list[dict]，key 顺序 = CSV 表头列顺序，传给 quick_sheets_batch_append
+            rows = list(reader)
+
+        if not rows:
+            raise ValueError("CSV 文件没有数据行")
+
+        await self.quick_sheets_batch_append(
+            spreadsheet_token,
+            sheet_id,
+            rows,
+            batch_size=batch_size,
+            batch_interval=batch_interval,
+        )
 
     async def quick_sheets_batch_append(
         self: _LarkMixinProtocol,

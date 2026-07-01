@@ -21,6 +21,7 @@ from .tools.sheets import (
     WriteRangeInput,
 )
 from .tools.sheets_quick import (
+    BatchAppendFromFileInput,
     BatchAppendInput,
     BatchUpdateInput,
     FilterSheetColumnsInput,
@@ -516,6 +517,34 @@ async def tool_quick_sheets_batch_append(
             batch_interval=batch_interval,
         )
     )
+
+
+@mcp.tool(
+    name="lark_quick_batch_append_from_file",
+    annotations=ToolAnnotations(
+        title="从 CSV 文件批量追加数据",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_sheets_batch_append_from_file(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    file_path: Annotated[str, Field(description="本地 CSV 文件路径")],
+    batch_size: Annotated[int, Field(description="每批写入行数，默认 5000", ge=1, le=5000)] = 5000,
+) -> str:
+    """从本地 CSV 文件批量追加数据到工作表。CSV 第一行为表头，数据追加到现有行之后。"""
+    return await sheets_quick.quick_sheets_batch_append_from_file(
+        BatchAppendFromFileInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            file_path=file_path,
+            batch_size=batch_size,
+        )
+    )
+
 
 def main() -> None:
     transport = os.getenv("MCP_TRANSPORT", "stdio")
