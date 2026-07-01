@@ -234,7 +234,7 @@ async def tool_copy_sheet(
 )
 async def tool_read_range(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    range_str: Annotated[str, Field(description="范围，如 Sheet1!A1:C10", min_length=1)],
+    range_str: Annotated[str, Field(description="范围，如 {sheetId}!A1:C10", min_length=1)],
 ) -> str:
     """读取单个范围数据，返回 markdown 表格（超过 10 行仅预览前 10 行）。"""
     return await sheets.read_range(

@@ -52,7 +52,7 @@ class ReadRangeInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
-    range_str: str = Field(..., min_length=1, description="范围，如 Sheet1!A1:C10")
+    range_str: str = Field(..., min_length=1, description="范围，如 {sheetId}!A1:C10")
 
 
 class WriteRangeInput(BaseModel):
