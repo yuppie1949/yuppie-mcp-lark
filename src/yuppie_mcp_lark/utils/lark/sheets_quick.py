@@ -361,6 +361,7 @@ class QuickSheetsMixin:
             batch_size=batch_size,
             batch_interval=batch_interval,
             data_start=data_start,
+            overwrite_start=True
         )
 
     async def quick_sheets_batch_append(
@@ -372,15 +373,34 @@ class QuickSheetsMixin:
         batch_size: int = 500,
         batch_interval: int = 2,
         data_start: int = 2,
+        overwrite_start: int | bool | None = None,
     ) -> None:
-        """批量追加行到工作表，自动分片并带间隔"""
+        """批量追加行到工作表，自动分片并带间隔
+
+        overwrite_start 为 True 时从 data_start 开始覆写，
+        为 int 时从该行开始覆写，为 None 则使用 append 自动寻址。
+        """
         if not data:
             return
         headers = list(data[0].keys()) if isinstance(data[0], dict) else []
         values: list[list[str]] = [[str(row.get(h, "")) for h in headers] for row in data]
 
-        for i in range(0, len(values), batch_size):
-            chunk = values[i : i + batch_size]
-            await self.append_data(spreadsheet_token, sheet_id, chunk, data_start=data_start)
-            if i + batch_size < len(values) and batch_interval > 0:
-                await asyncio.sleep(batch_interval)
+        if overwrite_start is not None:
+            # 从指定行覆盖写入，不用 append_data
+            start_row = data_start if overwrite_start is True else overwrite_start  # type: ignore[comparison-overlap]
+            col_count = len(headers)
+            end_col = self._index_to_letter(col_count - 1)
+            for i in range(0, len(values), batch_size):
+                chunk = values[i : i + batch_size]
+                row_start = start_row + i
+                row_end = row_start + len(chunk) - 1
+                range_str = f"{sheet_id}!A{row_start}:{end_col}{row_end}"
+                await self.write_range(spreadsheet_token, range_str, chunk)
+                if i + batch_size < len(values) and batch_interval > 0:
+                    await asyncio.sleep(batch_interval)
+        else:
+            for i in range(0, len(values), batch_size):
+                chunk = values[i : i + batch_size]
+                await self.append_data(spreadsheet_token, sheet_id, chunk, data_start=data_start)
+                if i + batch_size < len(values) and batch_interval > 0:
+                    await asyncio.sleep(batch_interval)

@@ -523,8 +523,11 @@ async def tool_quick_sheets_batch_append(
     batch_size: Annotated[int, Field(description="每批追加行数，默认 500", ge=1, le=5000)] = 500,
     batch_interval: Annotated[int, Field(description="每批追加间隔秒数，默认 2", ge=0, le=30)] = 2,
     data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
+    overwrite_start: Annotated[
+        int | bool | None, Field(description="True 从 data_start 覆写，int 从指定行覆写，None 使用 append 寻址")
+    ] = None,
 ) -> str:
-    """批量追加行到工作表，自动分片并带间隔。"""
+    """批量追加行到工作表，自动分片并带间隔。指定 overwrite_start 则从该行覆盖写入。"""
     return await sheets_quick.quick_sheets_batch_append(
         BatchAppendInput(
             spreadsheet_token=spreadsheet_token,
@@ -533,6 +536,7 @@ async def tool_quick_sheets_batch_append(
             batch_size=batch_size,
             batch_interval=batch_interval,
             data_start=data_start,
+            overwrite_start=overwrite_start,
         )
     )
 

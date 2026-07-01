@@ -98,6 +98,9 @@ class BatchAppendInput(BaseModel):
     batch_size: int = Field(500, ge=1, le=5000, description="每批追加行数")
     batch_interval: int = Field(2, ge=0, le=30, description="每批追加间隔秒数，默认 2")
     data_start: int = Field(2, ge=1, description="数据起始行（1-based），默认 2")
+    overwrite_start: int | bool | None = Field(
+        None, description="True 从 data_start 覆写，int 从指定行覆写，None 使用 append 自动寻址",
+    )
 
 
 class BatchAppendFromFileInput(BaseModel):
@@ -270,6 +273,7 @@ async def quick_sheets_batch_append(args: BatchAppendInput) -> str:
             batch_size=args.batch_size,
             batch_interval=args.batch_interval,
             data_start=args.data_start,
+            overwrite_start=args.overwrite_start,
         )
         _elapsed = time.time() - _t0
         return (
