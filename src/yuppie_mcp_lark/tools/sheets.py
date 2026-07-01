@@ -70,6 +70,7 @@ class AppendDataInput(BaseModel):
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
     sheet_id: str = Field(..., min_length=1, description="工作表 ID")
     values: list[list[Any]] = Field(..., description="二维数组")
+    data_start: int = Field(2, ge=1, description="数据起始行号（1-based），默认 2")
 
 
 class DeleteDimensionInput(BaseModel):
@@ -200,7 +201,10 @@ async def append_data(args: AppendDataInput) -> str:
     try:
         _t0 = time.time()
         client = _get_client()
-        await client.append_data(args.spreadsheet_token, args.sheet_id, args.values)
+        await client.append_data(
+            args.spreadsheet_token, args.sheet_id, args.values,
+            data_start=args.data_start,
+        )
         _elapsed = time.time() - _t0
         rows = len(args.values)
         return (

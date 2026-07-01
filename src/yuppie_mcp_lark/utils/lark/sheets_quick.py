@@ -24,12 +24,16 @@ class QuickSheetsMixin:
         spreadsheet_token: str,
         sheet_id: str,
         keep_columns: list[str],
+        *,
+        data_start: int = 2,
     ) -> str:
         """只保留指定列，删除其余列（包括空白列），返回 sheetId"""
+        header_row = data_start - 1
         col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if col_count <= 0:
             return sheet_id
-        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
+        rng = f"{sheet_id}!A{header_row}:{end_col}{header_row}"
+        headers = await self.read_range(spreadsheet_token, rng)
         if not headers:
             return sheet_id
         raw_headers = headers[0]
@@ -70,10 +74,11 @@ class QuickSheetsMixin:
         *,
         batch_column: str = "f_batch_index",
         batch_size: int = 10,
+        data_start: int = 2,
     ) -> None:
         """按列设置批次索引，列不存在时自动创建"""
         col_letter = await self._ensure_column(
-            spreadsheet_token, sheet_id, batch_column
+            spreadsheet_token, sheet_id, batch_column, data_start=data_start,
         )
 
         data = await self.read_range(spreadsheet_token, f"{sheet_id}!A:A")
@@ -81,7 +86,7 @@ class QuickSheetsMixin:
         rows_to_write: list[tuple[int, int]] = []
         batch_num = 1
         row_count = 0
-        for i in range(1, len(data)):
+        for i in range(data_start - 1, len(data)):
             val = str(data[i][0]) if i < len(data) and data[i] else ""
             if val.strip():
                 rows_to_write.append((i + 1, batch_num))
@@ -112,12 +117,14 @@ class QuickSheetsMixin:
         header_list: list[str],
         *,
         keep_columns: int | None = None,
+        data_start: int = 2,
     ) -> None:
         """从指定位置写入新表头，keep_columns 为 None 时从 A 列写入"""
+        header_row = data_start - 1
         start_col = keep_columns if keep_columns is not None else 0
         start_letter = self._index_to_letter(start_col)
         end_letter = self._index_to_letter(start_col + len(header_list) - 1)
-        range_str = f"{sheet_id}!{start_letter}1:{end_letter}1"
+        range_str = f"{sheet_id}!{start_letter}{header_row}:{end_letter}{header_row}"
         await self.write_range(spreadsheet_token, range_str, [header_list])
 
     async def quick_sheets_get_last_value(
@@ -125,11 +132,15 @@ class QuickSheetsMixin:
         spreadsheet_token: str,
         sheet_id: str,
         column_name: str,
+        *,
+        data_start: int = 2,
     ) -> dict[str, Any]:
         """获取指定列中最后一个非空值和其行号（跳过表头），返回 {value, row_number}"""
-        col_letter = await self._resolve_column_letter(spreadsheet_token, sheet_id, column_name)
+        col_letter = await self._resolve_column_letter(
+            spreadsheet_token, sheet_id, column_name, data_start=data_start,
+        )
         data = await self.read_range(spreadsheet_token, f"{sheet_id}!{col_letter}:{col_letter}")
-        for i in range(len(data) - 1, 0, -1):
+        for i in range(len(data) - 1, data_start - 2, -1):
             row = data[i]
             if row and row[0] is not None and row[0] != "":
                 return {"value": row[0], "row_number": i + 1}
@@ -141,17 +152,21 @@ class QuickSheetsMixin:
         sheet_id: str,
         batch_id: int,
         batch_size: int,
+        *,
+        data_start: int = 2,
     ) -> list[dict[str, Any]]:
         """按批次获取行数据，返回 [{header: value, row_number: int}]"""
+        header_row = data_start - 1
         col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if col_count <= 0:
             return []
-        headers_raw = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
+        rng = f"{sheet_id}!A{header_row}:{end_col}{header_row}"
+        headers_raw = await self.read_range(spreadsheet_token, rng)
         if not headers_raw:
             return []
         headers = headers_raw[0]
 
-        start_row = 2 + (batch_id - 1) * batch_size
+        start_row = data_start + (batch_id - 1) * batch_size
         end_row = start_row + batch_size - 1
         all_data = await self.read_range(
             spreadsheet_token, f"{sheet_id}!A{start_row}:{end_col}{end_row}"
@@ -174,6 +189,8 @@ class QuickSheetsMixin:
         sheet_id: str,
         update_data: list[dict[str, Any]],
         columns: list[str] | None = None,
+        *,
+        data_start: int = 2,
     ) -> None:
         """批量更新多行。columns 为 None 时从第一条数据自动推导列名"""
         if not update_data:
@@ -181,11 +198,12 @@ class QuickSheetsMixin:
         if columns is None:
             columns = [k for k in update_data[0] if k != "row_number"]
 
+        header_row = data_start - 1
         _col_count, _end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if _col_count <= 0:
             return
         headers = (await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A1:{_end_col}1"
+            spreadsheet_token, f"{sheet_id}!A{header_row}:{_end_col}{header_row}"
         ))[0]
         col_indices = {h: i for i, h in enumerate(headers) if h is not None}
 
@@ -225,6 +243,7 @@ class QuickSheetsMixin:
         sheet_id: str,
         *,
         keep_header: bool = True,
+        data_start: int = 2,
     ) -> None:
         """清空工作表数据，默认保留首行表头"""
         meta = await self.get_metainfo(spreadsheet_token)
@@ -234,7 +253,7 @@ class QuickSheetsMixin:
                 row_count = s.get("rowCount", 0)
                 break
 
-        start = 2 if keep_header else 1
+        start = data_start if keep_header else 1
         if start > row_count:
             return
 
@@ -257,6 +276,7 @@ class QuickSheetsMixin:
         *,
         batch_size: int = 500,
         batch_interval: int = 2,
+        data_start: int = 2,
     ) -> None:
         """从本地 CSV 文件批量追加数据到工作表
 
@@ -284,6 +304,7 @@ class QuickSheetsMixin:
             rows,
             batch_size=batch_size,
             batch_interval=batch_interval,
+            data_start=data_start,
         )
 
     async def quick_sheets_batch_append(
@@ -294,6 +315,7 @@ class QuickSheetsMixin:
         *,
         batch_size: int = 500,
         batch_interval: int = 2,
+        data_start: int = 2,
     ) -> None:
         """批量追加行到工作表，自动分片并带间隔"""
         if not data:
@@ -303,6 +325,6 @@ class QuickSheetsMixin:
 
         for i in range(0, len(values), batch_size):
             chunk = values[i : i + batch_size]
-            await self.append_data(spreadsheet_token, sheet_id, chunk)
+            await self.append_data(spreadsheet_token, sheet_id, chunk, data_start=data_start)
             if i + batch_size < len(values) and batch_interval > 0:
                 await asyncio.sleep(batch_interval)

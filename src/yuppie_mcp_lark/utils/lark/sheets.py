@@ -116,7 +116,12 @@ class SheetsMixin:
         )
 
     async def append_data(
-        self: _LarkMixinProtocol, spreadsheet_token: str, sheet_id: str, values: list[list[Any]]
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        values: list[list[Any]],
+        *,
+        data_start: int = 2,
     ) -> None:
         """追加数据到工作表（自动找空白位置写入）
 
@@ -130,7 +135,7 @@ class SheetsMixin:
             params={"insertDataOption": "OVERWRITE"},
             json_data={
                 "valueRange": {
-                    "range": f"{sheet_id}!A1:{end_col}",
+                    "range": f"{sheet_id}!A{data_start}:{end_col}",
                     "values": values,
                 }
             },
@@ -212,11 +217,14 @@ class SheetsMixin:
         spreadsheet_token: str,
         sheet_id: str,
         column_name: str,
+        *,
+        data_start: int = 2,
     ) -> str:
         """确保列存在，不存在则在表头末尾自动创建，返回列字母"""
+        header_row = data_start - 1
         try:
             return await self._resolve_column_letter(
-                spreadsheet_token, sheet_id, column_name
+                spreadsheet_token, sheet_id, column_name, data_start=data_start,
             )
         except Exception:
             col_count, end_col = await self._get_sheet_dimensions(
@@ -224,7 +232,7 @@ class SheetsMixin:
             )
             if col_count > 0:
                 headers = await self.read_range(
-                    spreadsheet_token, f"{sheet_id}!A1:{end_col}1"
+                    spreadsheet_token, f"{sheet_id}!A{header_row}:{end_col}{header_row}"
                 )
                 existing = headers[0] if headers else []
                 while existing and existing[-1] in (None, ""):
@@ -234,7 +242,7 @@ class SheetsMixin:
                 col_letter = self._index_to_letter(0)
             await self.write_range(
                 spreadsheet_token,
-                f"{sheet_id}!{col_letter}1:{col_letter}1",
+                f"{sheet_id}!{col_letter}{header_row}:{col_letter}{header_row}",
                 [[column_name]],
             )
             return col_letter
@@ -245,12 +253,16 @@ class SheetsMixin:
         spreadsheet_token: str,
         sheet_id: str,
         column_name: str,
+        *,
+        data_start: int = 2,
     ) -> str:
         """根据列名在表头中的位置解析列字母"""
+        header_row = data_start - 1
         col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if col_count <= 0:
             raise Exception(f"无法获取工作表 {sheet_id} 的列数")
-        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
+        rng = f"{sheet_id}!A{header_row}:{end_col}{header_row}"
+        headers = await self.read_range(spreadsheet_token, rng)
         if not headers:
             raise Exception(f"无法读取表头：{sheet_id}")
         for i, h in enumerate(headers[0]):

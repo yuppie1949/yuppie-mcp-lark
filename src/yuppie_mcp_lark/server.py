@@ -283,6 +283,7 @@ async def tool_append_data(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     values: Annotated[list[list[Any]], Field(description="二维数组")],
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """追加数据到工作表（自动找空白位置写入）。"""
     return await sheets.append_data(
@@ -290,6 +291,7 @@ async def tool_append_data(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,
             values=values,
+            data_start=data_start,
         )
     )
 
@@ -338,6 +340,7 @@ async def tool_quick_sheets_filter_columns(
     keep_columns: Annotated[
         list[str], Field(description="要保留的列名列表，其余列将被删除", min_length=1)
     ],
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """只保留指定列，删除其余列（包括空白列）。"""
     return await sheets_quick.quick_sheets_filter_columns(
@@ -345,6 +348,7 @@ async def tool_quick_sheets_filter_columns(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,
             keep_columns=keep_columns,
+            data_start=data_start,
         )
     )
 
@@ -365,6 +369,7 @@ async def tool_quick_sheets_set_batch_index(
         str, Field(description="批次列名，默认 f_batch_index")
     ] = "f_batch_index",
     batch_size: Annotated[int, Field(description="每批行数，默认 10", ge=1, le=1000)] = 10,
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """按列设置批次索引，将数据按 batch_size 分组并写入批次号。"""
     return await sheets_quick.quick_sheets_set_batch_index(
@@ -373,6 +378,7 @@ async def tool_quick_sheets_set_batch_index(
             sheet_id=sheet_id,
             batch_column=batch_column,
             batch_size=batch_size,
+            data_start=data_start,
         )
     )
 
@@ -394,6 +400,7 @@ async def tool_quick_sheets_set_header_list(
     keep_columns: Annotated[
         int | None, Field(description="保留的原始列数，不指定则从 A 列写入", ge=0)
     ] = None,
+    data_start: Annotated[int, Field(description="表头所在行=data_start-1，默认 2", ge=1)] = 2,
 ) -> str:
     """从指定位置写入新表头。"""
     return await sheets_quick.quick_sheets_set_header_list(
@@ -402,6 +409,7 @@ async def tool_quick_sheets_set_header_list(
             sheet_id=sheet_id,
             header_list=header_list,
             keep_columns=keep_columns,
+            data_start=data_start,
         )
     )
 
@@ -420,6 +428,7 @@ async def tool_quick_sheets_get_column_last_value(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     column_name: Annotated[str, Field(description="列名，将在表头中查找其位置", min_length=1)],
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """获取指定列中最后一个数值（跳过表头），用于确定最大批次等场景。"""
     return await sheets_quick.quick_sheets_get_column_last_value(
@@ -427,6 +436,7 @@ async def tool_quick_sheets_get_column_last_value(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,
             column_name=column_name,
+            data_start=data_start,
         )
     )
 
@@ -446,6 +456,7 @@ async def tool_quick_sheets_get_rows_by_batch(
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     batch_id: Annotated[int, Field(description="批次号，从 1 开始", ge=1)],
     batch_size: Annotated[int, Field(description="每批行数", ge=1, le=5000)],
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """按批次范围读取行数据，返回 markdown 表格。"""
     return await sheets_quick.quick_sheets_get_rows_by_batch(
@@ -454,6 +465,7 @@ async def tool_quick_sheets_get_rows_by_batch(
             sheet_id=sheet_id,
             batch_id=batch_id,
             batch_size=batch_size,
+            data_start=data_start,
         )
     )
 
@@ -479,6 +491,7 @@ async def tool_quick_sheets_batch_update(
         list[str] | None,
         Field(description="要写入的列名列表，不传则从第一条数据自动推导"),
     ] = None,
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """批量更新多行，一次请求更新所有指定列。"""
     return await sheets_quick.quick_sheets_batch_update(
@@ -487,6 +500,7 @@ async def tool_quick_sheets_batch_update(
             sheet_id=sheet_id,
             update_data=update_data,
             columns=columns,
+            data_start=data_start,
         )
     )
 
@@ -507,6 +521,7 @@ async def tool_quick_sheets_batch_append(
     data: Annotated[list[dict[str, Any]], Field(description="要追加的数据，每行一个 dict")],
     batch_size: Annotated[int, Field(description="每批追加行数，默认 500", ge=1, le=5000)] = 500,
     batch_interval: Annotated[int, Field(description="每批追加间隔秒数，默认 2", ge=0, le=30)] = 2,
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """批量追加行到工作表，自动分片并带间隔。"""
     return await sheets_quick.quick_sheets_batch_append(
@@ -516,6 +531,7 @@ async def tool_quick_sheets_batch_append(
             data=data,
             batch_size=batch_size,
             batch_interval=batch_interval,
+            data_start=data_start,
         )
     )
 
@@ -535,6 +551,7 @@ async def tool_quick_sheets_batch_append_from_file(
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     file_path: Annotated[str, Field(description="本地 CSV 文件路径")],
     batch_size: Annotated[int, Field(description="每批写入行数，默认 5000", ge=1, le=5000)] = 5000,
+    data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
 ) -> str:
     """从本地 CSV 文件批量追加数据到工作表。CSV 第一行为表头，数据追加到现有行之后。"""
     return await sheets_quick.quick_sheets_batch_append_from_file(
@@ -543,6 +560,7 @@ async def tool_quick_sheets_batch_append_from_file(
             sheet_id=sheet_id,
             file_path=file_path,
             batch_size=batch_size,
+            data_start=data_start,
         )
     )
 
@@ -561,6 +579,7 @@ async def tool_quick_sheets_clear_sheet(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     keep_header: Annotated[bool, Field(description="是否保留首行表头，默认 true")] = True,
+    data_start: Annotated[int, Field(description="数据起始行号，默认 2", ge=1)] = 2,
 ) -> str:
     """清空工作表数据，默认保留首行表头。"""
     return await sheets_quick.quick_sheets_clear_sheet(
@@ -568,6 +587,7 @@ async def tool_quick_sheets_clear_sheet(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,
             keep_header=keep_header,
+            data_start=data_start,
         )
     )
 

@@ -53,7 +53,8 @@ class _LarkMixinProtocol(Protocol):
         self, spreadsheet_token: str, value_ranges: list[dict[str, Any]]
     ) -> dict[str, Any]: ...
     async def append_data(
-        self, spreadsheet_token: str, sheet_id: str, values: list[list[Any]]
+        self, spreadsheet_token: str, sheet_id: str, values: list[list[Any]],
+        *, data_start: int = ...,
     ) -> None: ...
     async def delete_dimension(
         self,
@@ -68,7 +69,7 @@ class _LarkMixinProtocol(Protocol):
     async def find_sheet_id(self, spreadsheet_token: str, title: str) -> str: ...
     async def get_sheet_id(self, spreadsheet_token: str, sheet_title: str) -> str: ...
     async def _resolve_column_letter(
-        self, spreadsheet_token: str, sheet_id: str, column_name: str
+        self, spreadsheet_token: str, sheet_id: str, column_name: str, *, data_start: int = ...
     ) -> str: ...
     async def _get_sheet_dimensions(
         self, spreadsheet_token: str, sheet_id: str
@@ -77,7 +78,8 @@ class _LarkMixinProtocol(Protocol):
 
     # ── QuickSheetsMixin ──
     async def quick_sheets_filter_columns(
-        self, spreadsheet_token: str, sheet_id: str, keep_columns: list[str]
+        self, spreadsheet_token: str, sheet_id: str, keep_columns: list[str],
+        *, data_start: int = ...,
     ) -> str: ...
     async def quick_sheets_set_batch_index(
         self,
@@ -86,6 +88,7 @@ class _LarkMixinProtocol(Protocol):
         *,
         batch_column: str = ...,
         batch_size: int = ...,
+        data_start: int = ...,
     ) -> None: ...
     async def quick_sheets_set_header_list(
         self,
@@ -94,12 +97,14 @@ class _LarkMixinProtocol(Protocol):
         header_list: list[str],
         *,
         keep_columns: int | None = ...,
+        data_start: int = ...,
     ) -> None: ...
     async def quick_sheets_get_last_value(
-        self, spreadsheet_token: str, sheet_id: str, column_name: str
+        self, spreadsheet_token: str, sheet_id: str, column_name: str, *, data_start: int = ...
     ) -> dict[str, Any]: ...
     async def quick_sheets_get_rows_by_batch(
-        self, spreadsheet_token: str, sheet_id: str, batch_id: int, batch_size: int
+        self, spreadsheet_token: str, sheet_id: str, batch_id: int, batch_size: int,
+        *, data_start: int = ...,
     ) -> list[dict[str, Any]]: ...
     async def quick_sheets_batch_update(
         self,
@@ -107,9 +112,11 @@ class _LarkMixinProtocol(Protocol):
         sheet_id: str,
         update_data: list[dict[str, Any]],
         columns: list[str] | None = ...,
+        *,
+        data_start: int = ...,
     ) -> None: ...
     async def _ensure_column(
-        self, spreadsheet_token: str, sheet_id: str, column_name: str
+        self, spreadsheet_token: str, sheet_id: str, column_name: str, *, data_start: int = ...
     ) -> str: ...
     async def quick_sheets_batch_append(
         self,
@@ -119,6 +126,7 @@ class _LarkMixinProtocol(Protocol):
         *,
         batch_size: int = ...,
         batch_interval: int = ...,
+        data_start: int = ...,
     ) -> None: ...
 
 
