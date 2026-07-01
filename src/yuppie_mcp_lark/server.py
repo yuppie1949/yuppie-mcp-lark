@@ -24,6 +24,7 @@ from .tools.sheets_quick import (
     BatchAppendFromFileInput,
     BatchAppendInput,
     BatchUpdateInput,
+    ClearSheetInput,
     FilterSheetColumnsInput,
     GetColumnLastValueInput,
     GetRowsByBatchInput,
@@ -542,6 +543,31 @@ async def tool_quick_sheets_batch_append_from_file(
             sheet_id=sheet_id,
             file_path=file_path,
             batch_size=batch_size,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_clear_sheet",
+    annotations=ToolAnnotations(
+        title="清空工作表数据",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_sheets_clear_sheet(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    keep_header: Annotated[bool, Field(description="是否保留首行表头，默认 true")] = True,
+) -> str:
+    """清空工作表数据，默认保留首行表头。"""
+    return await sheets_quick.quick_sheets_clear_sheet(
+        ClearSheetInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            keep_header=keep_header,
         )
     )
 

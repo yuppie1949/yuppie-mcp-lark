@@ -219,6 +219,36 @@ class QuickSheetsMixin:
         if value_ranges:
             await self.write_multiple_range(spreadsheet_token, value_ranges)
 
+    async def quick_sheets_clear_sheet(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        keep_header: bool = True,
+    ) -> None:
+        """清空工作表数据，默认保留首行表头"""
+        meta = await self.get_metainfo(spreadsheet_token)
+        row_count = 0
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                row_count = s.get("rowCount", 0)
+                break
+
+        start = 2 if keep_header else 1
+        if start > row_count:
+            return
+
+        chunk_size = 5000
+        for end in range(row_count, start - 1, -chunk_size):
+            chunk_start = max(start, end - chunk_size + 1)
+            await self.delete_dimension(
+                spreadsheet_token,
+                sheet_id,
+                major_dimension="ROWS",
+                start_index=chunk_start,
+                end_index=end,
+            )
+
     async def quick_sheets_batch_append_from_file(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
