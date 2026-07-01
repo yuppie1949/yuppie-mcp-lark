@@ -800,15 +800,6 @@ wheels = [
 ]
 
 [[package]]
-name = "python-tds"
-version = "1.17.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ae/8a/cf778bd80d142d4b3c39f9879485e2e93e4ace2ae9aabae77e07e8117f41/python_tds-1.17.1.tar.gz", hash = "sha256:c97483a9adf1dcab8bee66e83429acc502753f389d134553edd818348b94ced0", size = 82208, upload-time = "2025-09-13T12:57:37.909Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bf/8f/c7344075a9ea4458e5d52cf2e16dc7e70777807c96ba9d429f16f27b1acc/python_tds-1.17.1-py3-none-any.whl", hash = "sha256:35cb210b1a54e5ccc91570a83d4e9a2a16682cbeb00bede06fd6cdf9afa9762f", size = 86635, upload-time = "2025-09-13T12:57:36.877Z" },
-]
-
-[[package]]
 name = "pywin32"
 version = "312"
 source = { registry = "https://pypi.org/simple" }
@@ -1255,13 +1246,14 @@ wheels = [
 ]
 
 [[package]]
-name = "yuppie-mcp-mssql"
-version = "0.1.1"
+name = "yuppie-mcp-lark"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "mcp" },
     { name = "pydantic" },
-    { name = "python-tds" },
+    { name = "python-dotenv" },
 ]
 
 [package.optional-dependencies]
@@ -1274,12 +1266,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "mcp", specifier = ">=1.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
-    { name = "python-tds", specifier = ">=1.17.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
 ]
 provides-extras = ["dev"]
