@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -83,12 +84,19 @@ class DeleteDimensionInput(BaseModel):
 
 async def get_metainfo(args: GetMetainfoInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         data = await client.get_metainfo(args.spreadsheet_token)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 获取元信息失败：{e}"
     sheets = data.get("sheets", [])
-    lines = [f"标题: **{data.get('title', '')}**", ""]
+    title = data.get("title", "")
+    summary = (
+        f"查询完成\n\n- **标题**: {title}\n"
+        f"- **工作表数**: `{len(sheets)}`\n- **耗时**: `{_elapsed:.1f}s`\n"
+    )
+    lines = [summary]
     lines.append("| 工作表 | sheetId | 行数 | 列数 |")
     lines.append("| --- | --- | --- | --- |")
     for s in sheets:
@@ -101,30 +109,46 @@ async def get_metainfo(args: GetMetainfoInput) -> str:
 
 async def add_sheet(args: AddSheetInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         sheet_id = await client.add_sheet(args.spreadsheet_token, args.title)
-        return f"✅ 工作表已创建\n\n- **title**: `{args.title}`\n- **sheetId**: `{sheet_id}`"
+        _elapsed = time.time() - _t0
+        return (
+            f"✅ 工作表已创建\n\n"
+            f"- **title**: `{args.title}`\n"
+            f"- **sheetId**: `{sheet_id}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
+        )
     except Exception as e:
         return f"❌ 创建工作表失败：{e}"
 
 
 async def delete_sheet(args: DeleteSheetInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.delete_sheet(args.spreadsheet_token, args.sheet_id)
-        return f"✅ 工作表已删除\n\n- **sheetId**: `{args.sheet_id}`"
+        _elapsed = time.time() - _t0
+        return (
+            f"✅ 工作表已删除\n\n"
+            f"- **sheetId**: `{args.sheet_id}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
+        )
     except Exception as e:
         return f"❌ 删除工作表失败：{e}"
 
 
 async def copy_sheet(args: CopySheetInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         sheet_id = await client.copy_sheet(args.spreadsheet_token, args.source_sheet_id, args.title)
+        _elapsed = time.time() - _t0
         return (
             f"✅ 工作表已复制\n\n"
             f"- **source_sheet_id**: `{args.source_sheet_id}`\n"
-            f"- **new_sheetId**: `{sheet_id}`"
+            f"- **new_sheetId**: `{sheet_id}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 复制工作表失败：{e}"
@@ -132,50 +156,66 @@ async def copy_sheet(args: CopySheetInput) -> str:
 
 async def read_range(args: ReadRangeInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         data = await client.read_range(args.spreadsheet_token, args.range_str)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 读取失败：{e}"
     if not data:
-        return "范围为空"
+        return f"查询完成\n\n- **行数**: `0`\n- **耗时**: `{_elapsed:.1f}s`"
     rows = len(data)
     cols = max(len(r) for r in data)
-    preview_rows = data[:10]
     header = "| " + " | ".join(f"col{i}" for i in range(cols)) + " |"
     sep = "| " + " | ".join("---" for _ in range(cols)) + " |"
     body = "\n".join(
         "| " + " | ".join(str(r[i]) if i < len(r) else "" for i in range(cols)) + " |"
-        for r in preview_rows
+        for r in data
     )
-    truncated = f"\n\n> 共 {rows} 行，仅显示前 10 行" if rows > 10 else ""
-    return f"读取完成（{rows} 行 × {cols} 列）\n\n{header}\n{sep}\n{body}{truncated}"
+    return (
+        f"查询完成\n\n"
+        f"- **行数**: `{rows}`\n- **耗时**: `{_elapsed:.1f}s`\n\n"
+        f"{header}\n{sep}\n{body}"
+    )
 
 
 async def write_range(args: WriteRangeInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.write_range(args.spreadsheet_token, args.range_str, args.values)
+        _elapsed = time.time() - _t0
         rows = len(args.values)
-        return f"✅ 写入完成\n\n- **range**: `{args.range_str}`\n- **rows**: `{rows}`"
+        return (
+            f"✅ 写入完成\n\n"
+            f"- **range**: `{args.range_str}`\n"
+            f"- **rows**: `{rows}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
+        )
     except Exception as e:
         return f"❌ 写入失败：{e}"
 
 
 async def append_data(args: AppendDataInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.append_data(args.spreadsheet_token, args.sheet_id, args.values)
+        _elapsed = time.time() - _t0
         rows = len(args.values)
-        return f"✅ 追加完成\n\n- **sheet_id**: `{args.sheet_id}`\n- **rows**: `{rows}`"
+        return (
+            f"✅ 追加完成\n\n"
+            f"- **sheet_id**: `{args.sheet_id}`\n"
+            f"- **rows**: `{rows}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
+        )
     except Exception as e:
         return f"❌ 追加失败：{e}"
 
 
-# ── 业务批量工具 ──
-
-
 async def delete_dimension(args: DeleteDimensionInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.delete_dimension(
             args.spreadsheet_token,
@@ -184,10 +224,12 @@ async def delete_dimension(args: DeleteDimensionInput) -> str:
             start_index=args.start_index,
             end_index=args.end_index,
         )
+        _elapsed = time.time() - _t0
         return (
             f"✅ 删除完成\n\n"
             f"- **dimension**: `{args.major_dimension}`\n"
-            f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）"
+            f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 删除失败：{e}"
