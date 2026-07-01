@@ -119,6 +119,18 @@ class ClearSheetInput(BaseModel):
     data_start: int = Field(2, ge=1, description="数据起始行号，keep_header 时保留前一行（header）")
 
 
+class ClearSheetContentInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    sheet_id: str = Field(..., min_length=1, description="工作表 ID")
+    keep_header: bool = Field(True, description="是否保留首行表头，默认 true")
+    data_start: int = Field(2, ge=1, description="数据起始行号，keep_header 时保留前一行（header）")
+    before_column: str | None = Field(
+        None, description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列',
+    )
+
+
 async def quick_sheets_filter_columns(args: FilterSheetColumnsInput) -> str:
     try:
         _t0 = time.time()
@@ -286,6 +298,29 @@ async def quick_sheets_batch_append_from_file(args: BatchAppendFromFileInput) ->
         )
     except Exception as e:
         return f"❌ 从文件追加失败：{e}"
+
+
+async def quick_sheets_clear_sheet_content(args: ClearSheetContentInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        info = await client.quick_sheets_clear_sheet_content(
+            args.spreadsheet_token,
+            args.sheet_id,
+            keep_header=args.keep_header,
+            data_start=args.data_start,
+            before_column=args.before_column,
+        )
+        _elapsed = time.time() - _t0
+        col_label = f"**清空列数**: `{info['col_count']}`\n" if info["col_count"] else ""
+        return (
+            "✅ 工作表内容已清空\n\n"
+            f"{col_label}"
+            f"- **清空行数**: `{info['row_count']}`\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
+        )
+    except Exception as e:
+        return f"❌ 清空工作表内容失败：{e}"
 
 
 async def quick_sheets_clear_sheet(args: ClearSheetInput) -> str:

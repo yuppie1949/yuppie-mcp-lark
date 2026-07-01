@@ -24,6 +24,7 @@ from .tools.sheets_quick import (
     BatchAppendFromFileInput,
     BatchAppendInput,
     BatchUpdateInput,
+    ClearSheetContentInput,
     ClearSheetInput,
     FilterSheetColumnsInput,
     GetColumnLastValueInput,
@@ -566,9 +567,38 @@ async def tool_quick_sheets_batch_append_from_file(
 
 
 @mcp.tool(
+    name="lark_quick_clear_sheet_content",
+    annotations=ToolAnnotations(
+        title="清空工作表内容（不移除行）",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_sheets_clear_sheet_content(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    keep_header: Annotated[bool, Field(description="是否保留首行表头，默认 true")] = True,
+    data_start: Annotated[int, Field(description="数据起始行号，默认 2", ge=1)] = 2,
+    before_column: Annotated[str | None, Field(description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列')] = None,
+) -> str:
+    """清空工作表数据内容（不移除行）。指定 before_column 则只清空该列之前的所有列。"""
+    return await sheets_quick.quick_sheets_clear_sheet_content(
+        ClearSheetContentInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            keep_header=keep_header,
+            data_start=data_start,
+            before_column=before_column,
+        )
+    )
+
+
+@mcp.tool(
     name="lark_quick_clear_sheet",
     annotations=ToolAnnotations(
-        title="清空工作表数据",
+        title="清空工作表数据（删除行）",
         readOnlyHint=False,
         destructiveHint=True,
         idempotentHint=False,
@@ -581,7 +611,7 @@ async def tool_quick_sheets_clear_sheet(
     keep_header: Annotated[bool, Field(description="是否保留首行表头，默认 true")] = True,
     data_start: Annotated[int, Field(description="数据起始行号，默认 2", ge=1)] = 2,
 ) -> str:
-    """清空工作表数据，默认保留首行表头。"""
+    """清空工作表数据（删除行），默认保留首行表头。"""
     return await sheets_quick.quick_sheets_clear_sheet(
         ClearSheetInput(
             spreadsheet_token=spreadsheet_token,

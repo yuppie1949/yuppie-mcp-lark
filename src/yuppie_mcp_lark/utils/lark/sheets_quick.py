@@ -268,6 +268,62 @@ class QuickSheetsMixin:
                 end_index=end,
             )
 
+    async def quick_sheets_clear_sheet_content(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        keep_header: bool = True,
+        data_start: int = 2,
+        before_column: str | None = None,
+    ) -> dict[str, Any]:
+        """清空工作表数据内容（不移除行），默认保留首行表头
+
+        before_column 指定列字母（如 "F"），则只清空该列之前的所有列。
+        返回 {"col_count": int, "row_count": int, "start_row": int}。
+        """
+        meta = await self.get_metainfo(spreadsheet_token)
+        row_count = 0
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                row_count = s.get("rowCount", 0)
+                break
+
+        start = data_start if keep_header else 1
+        if start > row_count:
+            return {"col_count": 0, "row_count": 0, "start_row": start}
+
+        if before_column:
+            upper = before_column.upper().strip()
+            before_idx = 0
+            for ch in upper:
+                before_idx = before_idx * 26 + (ord(ch) - ord("A") + 1)
+            if before_idx <= 1:
+                return {"col_count": 0, "row_count": 0, "start_row": start}
+            clear_count = before_idx - 1  # 清空该列之前的所有列
+            end_col = self._index_to_letter(clear_count - 1)
+            empty_row = [""] * clear_count
+        else:
+            meta2 = await self.get_metainfo(spreadsheet_token)
+            col_count = 0
+            for s in meta2.get("sheets", []):
+                if str(s.get("sheetId", "")) == sheet_id:
+                    col_count = s.get("columnCount", 0)
+                    break
+            if col_count <= 0:
+                return {"col_count": 0, "row_count": 0, "start_row": start}
+            end_col = self._index_to_letter(col_count - 1)
+            empty_row = [""] * col_count
+
+        chunk_size = 5000
+        for batch_start in range(start, row_count + 1, chunk_size):
+            batch_end = min(batch_start + chunk_size - 1, row_count)
+            values = [empty_row] * (batch_end - batch_start + 1)
+            range_str = f"{sheet_id}!A{batch_start}:{end_col}{batch_end}"
+            await self.write_range(spreadsheet_token, range_str, values)
+
+        return {"col_count": len(empty_row), "row_count": row_count - start + 1, "start_row": start}
+
     async def quick_sheets_batch_append_from_file(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,

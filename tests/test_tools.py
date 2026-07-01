@@ -114,3 +114,29 @@ def test_delete_dimension_defaults_and_required() -> None:
         end_index=3,
     )
     assert args.major_dimension == "COLUMNS"
+
+
+# ── 电子表格快捷操作域 ──
+
+from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput
+
+
+def test_clear_sheet_content_required() -> None:
+    with pytest.raises(ValidationError):
+        ClearSheetContentInput()
+
+
+def test_clear_sheet_content_defaults() -> None:
+    args = ClearSheetContentInput(spreadsheet_token="x", sheet_id="y")
+    assert args.keep_header is True
+    assert args.data_start == 2
+    assert args.before_column is None
+
+
+def test_clear_sheet_content_with_before_column() -> None:
+    args = ClearSheetContentInput(
+        spreadsheet_token="x",
+        sheet_id="y",
+        before_column="F",
+    )
+    assert args.before_column == "F"
