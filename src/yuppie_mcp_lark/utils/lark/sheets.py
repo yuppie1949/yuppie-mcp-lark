@@ -117,6 +117,25 @@ class SheetsMixin:
             },
         )
 
+    async def batch_write_range(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        value_ranges: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """向电子表格某个工作表的多个指定范围中写入数据。若指定范围已内有数据，将被新写入的数据覆盖。
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/write-data-to-multiple-ranges
+
+        使用限制:
+            单次写入数据不得超过 5000 行、100列。
+            每个单元格不超过 50,000 字符，推荐不超过 40,000 字符。
+        """
+        return await self._request(
+            "POST",
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
+            json_data={"valueRanges": value_ranges},
+        )
+
     async def delete_dimension(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
@@ -142,6 +161,20 @@ class SheetsMixin:
                 },
             },
         )
+
+    # ── 辅助方法 ──
+
+    async def _get_sheet_dimensions(
+        self: _LarkMixinProtocol, spreadsheet_token: str, sheet_id: str
+    ) -> tuple[int, str]:
+        """获取工作表实际列数和末尾列字母，返回 (col_count, end_col)"""
+        meta = await self.get_metainfo(spreadsheet_token)
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                col_count = s.get("columnCount", 0)
+                if col_count > 0:
+                    return col_count, self._index_to_letter(col_count - 1)
+        return 0, ""
 
     # ── 工作表查找 ──
 
@@ -181,15 +214,9 @@ class SheetsMixin:
         column_name: str,
     ) -> str:
         """根据列名在表头中的位置解析列字母"""
-        meta = await self.get_metainfo(spreadsheet_token)
-        col_count = 0
-        for s in meta.get("sheets", []):
-            if str(s.get("sheetId", "")) == sheet_id:
-                col_count = s.get("columnCount", 0)
-                break
+        col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if col_count <= 0:
             raise Exception(f"无法获取工作表 {sheet_id} 的列数")
-        end_col = self._index_to_letter(col_count - 1)
         headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
         if not headers:
             raise Exception(f"无法读取表头：{sheet_id}")

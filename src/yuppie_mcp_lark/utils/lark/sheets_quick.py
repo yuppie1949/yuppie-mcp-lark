@@ -1,4 +1,4 @@
-"""电子表格业务批量操作 mixin — 跨项目复用，不暴露为 MCP 工具"""
+"""电子表格快捷业务操作 mixin — 跨项目复用，不暴露为 MCP 工具"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any
 from .base import _LarkMixinProtocol
 
 
-class SheetsBatchMixin:
+class QuickSheetsMixin:
     """电子表格业务批量操作
 
     与 SheetsMixin 共享同一个 LarkClient 实例，通过 self.read_range、
@@ -17,14 +17,17 @@ class SheetsBatchMixin:
     MRO 会自动找到 SheetsMixin 中的方法。
     """
 
-    async def filter_sheet_columns(
+    async def quick_sheets_filter_columns(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
         keep_columns: list[str],
     ) -> str:
         """只保留指定列，删除其余列（包括空白列），返回 sheetId"""
-        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:ZZZ1")
+        col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
+        if col_count <= 0:
+            return sheet_id
+        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
         if not headers:
             return sheet_id
         raw_headers = headers[0]
@@ -36,14 +39,7 @@ class SheetsBatchMixin:
         if not keep:
             return sheet_id
 
-        meta = await self.get_metainfo(spreadsheet_token)
-        sheet_col_count = 0
-        for s in meta.get("sheets", []):
-            if str(s.get("sheetId", "")) == sheet_id:
-                sheet_col_count = s.get("columnCount", 0)
-                break
-
-        drop = sorted(i for i in range(sheet_col_count) if i not in keep)
+        drop = sorted(i for i in range(col_count) if i not in keep)
         if not drop:
             return sheet_id
 
@@ -65,7 +61,7 @@ class SheetsBatchMixin:
 
         return sheet_id
 
-    async def set_column_batch_index(
+    async def quick_sheets_set_batch_index(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
@@ -79,16 +75,11 @@ class SheetsBatchMixin:
                 spreadsheet_token, sheet_id, batch_column
             )
         except Exception:
-            meta = await self.get_metainfo(spreadsheet_token)
-            col_count = 0
-            for s in meta.get("sheets", []):
-                if str(s.get("sheetId", "")) == sheet_id:
-                    col_count = s.get("columnCount", 0)
-                    break
+            col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
             if col_count > 0:
-                end_col = self._index_to_letter(col_count - 1)
-                rng = f"{sheet_id}!A1:{end_col}1"
-                headers = await self.read_range(spreadsheet_token, rng)
+                headers = await self.read_range(
+                    spreadsheet_token, f"{sheet_id}!A1:{end_col}1"
+                )
                 existing = headers[0] if headers else []
                 while existing and existing[-1] in (None, ""):
                     existing.pop()
@@ -125,13 +116,12 @@ class SheetsBatchMixin:
             vals = [[str(batch_val)] for _ in group_list]
             value_ranges.append({"range": rng, "values": vals})
 
-        await self._request(
-            "POST",
-            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
-            json_data={"valueRanges": value_ranges},
+        await self.batch_write_range(
+            spreadsheet_token,
+            value_ranges,
         )
 
-    async def set_header_list(
+    async def quick_sheets_set_header_list(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
@@ -146,7 +136,7 @@ class SheetsBatchMixin:
         range_str = f"{sheet_id}!{start_letter}1:{end_letter}1"
         await self.write_range(spreadsheet_token, range_str, [header_list])
 
-    async def get_last_value(
+    async def quick_sheets_get_last_value(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
@@ -161,7 +151,7 @@ class SheetsBatchMixin:
                 return {"value": row[0], "row_number": i + 1}
         return {"value": None, "row_number": 0}
 
-    async def get_rows_by_batch(
+    async def quick_sheets_get_rows_by_batch(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
@@ -169,19 +159,10 @@ class SheetsBatchMixin:
         batch_size: int,
     ) -> list[dict[str, Any]]:
         """按批次获取行数据，返回 [{header: value, row_number: int}]"""
-        meta = await self.get_metainfo(spreadsheet_token)
-        col_count = 0
-        for s in meta.get("sheets", []):
-            if str(s.get("sheetId", "")) == sheet_id:
-                col_count = s.get("columnCount", 0)
-                break
+        col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if col_count <= 0:
             return []
-        end_col = self._index_to_letter(col_count - 1)
-
-        headers_raw = await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A1:{end_col}1"
-        )
+        headers_raw = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
         if not headers_raw:
             return []
         headers = headers_raw[0]
@@ -203,19 +184,26 @@ class SheetsBatchMixin:
 
         return result
 
-    async def batch_update_by_batch(
+    async def quick_sheets_batch_update(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
         update_data: list[dict[str, Any]],
-        columns: list[str],
+        columns: list[str] | None = None,
     ) -> None:
-        """批量更新多行，用 values_batch_update 一次请求更新所有行"""
+        """批量更新多行。columns 为 None 时从第一条数据自动推导列名"""
         if not update_data:
             return
+        if columns is None:
+            columns = [k for k in update_data[0] if k != "row_number"]
 
-        headers = (await self.read_range(spreadsheet_token, f"{sheet_id}!A1:ZZZ1"))[0]
-        col_indices = {h: i for i, h in enumerate(headers)}
+        _col_count, _end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
+        if _col_count <= 0:
+            return
+        headers = (await self.read_range(
+            spreadsheet_token, f"{sheet_id}!A1:{_end_col}1"
+        ))[0]
+        col_indices = {h: i for i, h in enumerate(headers) if h is not None}
 
         value_ranges: list[dict[str, Any]] = []
         for row in update_data:
@@ -229,12 +217,11 @@ class SheetsBatchMixin:
 
             cell_updates: list[tuple[str, Any]] = []
             for col_name in columns:
-                if col_name not in col_indices:
+                if col_name not in col_indices or col_name not in row:
                     continue
                 col_idx = col_indices[col_name]
                 col_letter = self._index_to_letter(col_idx)
-                value = row.get(col_name, "")
-                cell_updates.append((col_letter, value))
+                cell_updates.append((col_letter, row[col_name]))
 
             if not cell_updates:
                 continue
@@ -246,13 +233,9 @@ class SheetsBatchMixin:
             value_ranges.append({"range": range_str, "values": values})
 
         if value_ranges:
-            await self._request(
-                "POST",
-                f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
-                json_data={"valueRanges": value_ranges},
-            )
+            await self.batch_write_range(spreadsheet_token, value_ranges)
 
-    async def batch_append(
+    async def quick_sheets_batch_append(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,

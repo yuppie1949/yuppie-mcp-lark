@@ -7,7 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from .tools import bitable, messages, sheets, sheets_batch
+from .tools import bitable, messages, sheets, sheets_quick
 from .tools.bitable import SearchRecordsInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
@@ -20,7 +20,9 @@ from .tools.sheets import (
     ReadRangeInput,
     WriteRangeInput,
 )
-from .tools.sheets_batch import (
+from .tools.sheets_quick import (
+    BatchAppendInput,
+    BatchUpdateInput,
     FilterSheetColumnsInput,
     GetColumnLastValueInput,
     GetRowsByBatchInput,
@@ -220,7 +222,6 @@ async def tool_copy_sheet(
         )
     )
 
-
 @mcp.tool(
     name="lark_read_range",
     annotations=ToolAnnotations(
@@ -290,144 +291,6 @@ async def tool_append_data(
         )
     )
 
-
-@mcp.tool(
-    name="lark_filter_sheet_columns",
-    annotations=ToolAnnotations(
-        title="过滤工作表列",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
-    ),
-)
-async def tool_filter_sheet_columns(
-    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
-    keep_columns: Annotated[
-        list[str], Field(description="要保留的列名列表，其余列将被删除", min_length=1)
-    ],
-) -> str:
-    """只保留指定列，删除其余列（包括空白列）。"""
-    return await sheets_batch.filter_sheet_columns(
-        FilterSheetColumnsInput(
-            spreadsheet_token=spreadsheet_token,
-            sheet_id=sheet_id,
-            keep_columns=keep_columns,
-        )
-    )
-
-
-@mcp.tool(
-    name="lark_set_batch_index",
-    annotations=ToolAnnotations(
-        title="设置批次索引",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ),
-)
-async def tool_set_batch_index(
-    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
-    batch_column: Annotated[
-        str, Field(description="批次列名，默认 f_batch_index")
-    ] = "f_batch_index",
-    batch_size: Annotated[int, Field(description="每批行数，默认 10", ge=1, le=1000)] = 10,
-) -> str:
-    """按列设置批次索引，将数据按 batch_size 分组并写入批次号。"""
-    return await sheets_batch.set_batch_index(
-        SetBatchIndexInput(
-            spreadsheet_token=spreadsheet_token,
-            sheet_id=sheet_id,
-            batch_column=batch_column,
-            batch_size=batch_size,
-        )
-    )
-
-
-@mcp.tool(
-    name="lark_set_header_list",
-    annotations=ToolAnnotations(
-        title="写入新表头",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
-    ),
-)
-async def tool_set_header_list(
-    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
-    header_list: Annotated[list[str], Field(description="新表头列表", min_length=1)],
-    keep_columns: Annotated[
-        int | None, Field(description="保留的原始列数，不指定则从 A 列写入", ge=0)
-    ] = None,
-) -> str:
-    """从指定位置写入新表头。"""
-    return await sheets_batch.set_header_list(
-        SetHeaderListInput(
-            spreadsheet_token=spreadsheet_token,
-            sheet_id=sheet_id,
-            header_list=header_list,
-            keep_columns=keep_columns,
-        )
-    )
-
-
-@mcp.tool(
-    name="lark_get_column_last_value",
-    annotations=ToolAnnotations(
-        title="获取列最后一个数值",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ),
-)
-async def tool_get_column_last_value(
-    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
-    column_name: Annotated[str, Field(description="列名，将在表头中查找其位置", min_length=1)],
-) -> str:
-    """获取指定列中最后一个数值（跳过表头），用于确定最大批次等场景。"""
-    return await sheets_batch.get_column_last_value(
-        GetColumnLastValueInput(
-            spreadsheet_token=spreadsheet_token,
-            sheet_id=sheet_id,
-            column_name=column_name,
-        )
-    )
-
-
-@mcp.tool(
-    name="lark_get_rows_by_batch",
-    annotations=ToolAnnotations(
-        title="按批次读取行",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
-    ),
-)
-async def tool_get_rows_by_batch(
-    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
-    batch_id: Annotated[int, Field(description="批次号，从 1 开始", ge=1)],
-    batch_size: Annotated[int, Field(description="每批行数", ge=1, le=5000)],
-) -> str:
-    """按批次范围读取行数据，返回 markdown 表格。"""
-    return await sheets_batch.get_rows_by_batch(
-        GetRowsByBatchInput(
-            spreadsheet_token=spreadsheet_token,
-            sheet_id=sheet_id,
-            batch_id=batch_id,
-            batch_size=batch_size,
-        )
-    )
-
-
 @mcp.tool(
     name="lark_delete_dimension",
     annotations=ToolAnnotations(
@@ -455,6 +318,207 @@ async def tool_delete_dimension(
             end_index=end_index,
         )
     )
+
+
+@mcp.tool(
+    name="lark_quick_filter_sheet_columns",
+    annotations=ToolAnnotations(
+        title="过滤工作表列",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_filter_sheet_columns(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    keep_columns: Annotated[
+        list[str], Field(description="要保留的列名列表，其余列将被删除", min_length=1)
+    ],
+) -> str:
+    """只保留指定列，删除其余列（包括空白列）。"""
+    return await sheets_quick.quick_sheets_filter_columns(
+        FilterSheetColumnsInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            keep_columns=keep_columns,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_set_batch_index",
+    annotations=ToolAnnotations(
+        title="设置批次索引",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_set_batch_index(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    batch_column: Annotated[
+        str, Field(description="批次列名，默认 f_batch_index")
+    ] = "f_batch_index",
+    batch_size: Annotated[int, Field(description="每批行数，默认 10", ge=1, le=1000)] = 10,
+) -> str:
+    """按列设置批次索引，将数据按 batch_size 分组并写入批次号。"""
+    return await sheets_quick.quick_sheets_set_batch_index(
+        SetBatchIndexInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            batch_column=batch_column,
+            batch_size=batch_size,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_set_header_list",
+    annotations=ToolAnnotations(
+        title="写入新表头",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_set_header_list(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    header_list: Annotated[list[str], Field(description="新表头列表", min_length=1)],
+    keep_columns: Annotated[
+        int | None, Field(description="保留的原始列数，不指定则从 A 列写入", ge=0)
+    ] = None,
+) -> str:
+    """从指定位置写入新表头。"""
+    return await sheets_quick.quick_sheets_set_header_list(
+        SetHeaderListInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            header_list=header_list,
+            keep_columns=keep_columns,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_get_column_last_value",
+    annotations=ToolAnnotations(
+        title="获取列最后一个数值",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_get_column_last_value(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    column_name: Annotated[str, Field(description="列名，将在表头中查找其位置", min_length=1)],
+) -> str:
+    """获取指定列中最后一个数值（跳过表头），用于确定最大批次等场景。"""
+    return await sheets_quick.quick_sheets_get_column_last_value(
+        GetColumnLastValueInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            column_name=column_name,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_get_rows_by_batch",
+    annotations=ToolAnnotations(
+        title="按批次读取行",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_get_rows_by_batch(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    batch_id: Annotated[int, Field(description="批次号，从 1 开始", ge=1)],
+    batch_size: Annotated[int, Field(description="每批行数", ge=1, le=5000)],
+) -> str:
+    """按批次范围读取行数据，返回 markdown 表格。"""
+    return await sheets_quick.quick_sheets_get_rows_by_batch(
+        GetRowsByBatchInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            batch_id=batch_id,
+            batch_size=batch_size,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_batch_update",
+    annotations=ToolAnnotations(
+        title="批量更新行数据",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_batch_update(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    update_data: Annotated[
+        list[dict[str, Any]],
+        Field(description="更新数据，每行一个 dict，含 row_number 和要更新的列"),
+    ],
+    columns: Annotated[
+        list[str] | None,
+        Field(description="要写入的列名列表，不传则从第一条数据自动推导"),
+    ] = None,
+) -> str:
+    """批量更新多行，一次请求更新所有指定列。"""
+    return await sheets_quick.quick_sheets_batch_update(
+        BatchUpdateInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            update_data=update_data,
+            columns=columns,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_quick_batch_append",
+    annotations=ToolAnnotations(
+        title="批量追加行数据",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_batch_append(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    data: Annotated[list[dict[str, Any]], Field(description="要追加的数据，每行一个 dict")],
+    batch_size: Annotated[int, Field(description="每批追加行数，默认 500", ge=1, le=5000)] = 500,
+    batch_interval: Annotated[int, Field(description="每批追加间隔秒数，默认 2", ge=0, le=30)] = 2,
+) -> str:
+    """批量追加行到工作表，自动分片并带间隔。"""
+    return await sheets_quick.quick_sheets_batch_append(
+        BatchAppendInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            data=data,
+            batch_size=batch_size,
+            batch_interval=batch_interval,
+        )
+    )
+
+
 
 
 def main() -> None:

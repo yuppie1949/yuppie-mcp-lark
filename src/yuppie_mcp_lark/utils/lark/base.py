@@ -67,6 +67,55 @@ class _LarkMixinProtocol(Protocol):
     async def _resolve_column_letter(
         self, spreadsheet_token: str, sheet_id: str, column_name: str
     ) -> str: ...
+    async def _get_sheet_dimensions(
+        self, spreadsheet_token: str, sheet_id: str
+    ) -> tuple[int, str]: ...
+    async def batch_write_range(
+        self, spreadsheet_token: str, value_ranges: list[dict[str, Any]]
+    ) -> dict[str, Any]: ...
+
+    # ── QuickSheetsMixin ──
+    async def quick_sheets_filter_columns(
+        self, spreadsheet_token: str, sheet_id: str, keep_columns: list[str]
+    ) -> str: ...
+    async def quick_sheets_set_batch_index(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        batch_column: str = ...,
+        batch_size: int = ...,
+    ) -> None: ...
+    async def quick_sheets_set_header_list(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        header_list: list[str],
+        *,
+        keep_columns: int | None = ...,
+    ) -> None: ...
+    async def quick_sheets_get_last_value(
+        self, spreadsheet_token: str, sheet_id: str, column_name: str
+    ) -> dict[str, Any]: ...
+    async def quick_sheets_get_rows_by_batch(
+        self, spreadsheet_token: str, sheet_id: str, batch_id: int, batch_size: int
+    ) -> list[dict[str, Any]]: ...
+    async def quick_sheets_batch_update(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        update_data: list[dict[str, Any]],
+        columns: list[str] | None = ...,
+    ) -> None: ...
+    async def quick_sheets_batch_append(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        data: list[dict[str, Any]],
+        *,
+        batch_size: int = ...,
+        batch_interval: int = ...,
+    ) -> None: ...
 
 
 _FEISHU_ERRORS: dict[int, str] = {
