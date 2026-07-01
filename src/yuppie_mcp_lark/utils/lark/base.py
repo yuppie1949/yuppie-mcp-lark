@@ -43,6 +43,33 @@ class _LarkMixinProtocol(Protocol):
         uuid: str | None = ...,
     ) -> dict[str, Any]: ...
 
+    # ── SheetsMixin ──
+    async def get_metainfo(self, spreadsheet_token: str) -> dict[str, Any]: ...
+    async def read_range(self, spreadsheet_token: str, range_str: str) -> list[list[Any]]: ...
+    async def write_range(
+        self, spreadsheet_token: str, range_str: str, values: list[list[Any]]
+    ) -> dict[str, Any]: ...
+    async def append_data(
+        self, spreadsheet_token: str, sheet_id: str, values: list[list[Any]]
+    ) -> None: ...
+    async def delete_dimension(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        major_dimension: str = ...,
+        start_index: int,
+        end_index: int,
+    ) -> None: ...
+    async def find_sheet_ids(
+        self, spreadsheet_token: str, *titles: str
+    ) -> dict[str, str]: ...
+    async def find_sheet_id(self, spreadsheet_token: str, title: str) -> str: ...
+    async def get_sheet_id(self, spreadsheet_token: str, sheet_title: str) -> str: ...
+    async def _resolve_column_letter(
+        self, spreadsheet_token: str, sheet_id: str, column_name: str
+    ) -> str: ...
+
 
 _FEISHU_ERRORS: dict[int, str] = {
     90215: "指定的 sheet_id 不存在，请检查工作表 ID 是否正确",

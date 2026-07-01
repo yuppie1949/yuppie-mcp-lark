@@ -142,3 +142,51 @@ class SheetsMixin:
                 },
             },
         )
+
+    # ── 工作表查找 ──
+
+    async def find_sheet_ids(
+        self: _LarkMixinProtocol, spreadsheet_token: str, *titles: str
+    ) -> dict[str, str]:
+        """一次查询获取多个 sheetId，返回 {title: sheetId}"""
+        meta = await self.get_metainfo(spreadsheet_token)
+        result = {t: "" for t in titles}
+        for s in meta.get("sheets", []):
+            t = s.get("title", "")
+            if t in result:
+                result[t] = str(s.get("sheetId", ""))
+        return result
+
+    async def find_sheet_id(
+        self: _LarkMixinProtocol, spreadsheet_token: str, title: str
+    ) -> str:
+        """查找工作表 ID，未找到返回空字符串"""
+        try:
+            return await self.get_sheet_id(spreadsheet_token, title)
+        except Exception:
+            return ""
+
+    async def get_sheet_id(
+        self: _LarkMixinProtocol, spreadsheet_token: str, sheet_title: str
+    ) -> str:
+        """根据工作表标题获取 sheetId，未找到抛异常"""
+        metainfo = await self.get_metainfo(spreadsheet_token)
+        for s in metainfo.get("sheets", []):
+            if s.get("title") == sheet_title:
+                return str(s.get("sheetId", ""))
+        raise Exception(f"未找到工作表 '{sheet_title}'")
+
+    async def _resolve_column_letter(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        column_name: str,
+    ) -> str:
+        """根据列名在表头中的位置解析列字母"""
+        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:ZZZ1")
+        if not headers:
+            raise Exception(f"无法读取表头：{sheet_id}")
+        for i, h in enumerate(headers[0]):
+            if h == column_name:
+                return self._index_to_letter(i)
+        raise Exception(f"在表头中未找到列 '{column_name}'")

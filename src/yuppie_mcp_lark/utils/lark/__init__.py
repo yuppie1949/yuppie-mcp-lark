@@ -10,11 +10,12 @@ from .base import _LarkBase
 from .bitable import BitableMixin
 from .messages import MessagesMixin
 from .sheets import SheetsMixin
+from .sheets_batch import SheetsBatchMixin
 
 __all__ = ["LarkClient"]
 
 
-class LarkClient(_LarkBase, MessagesMixin, BitableMixin, SheetsMixin):
+class LarkClient(_LarkBase, MessagesMixin, BitableMixin, SheetsMixin, SheetsBatchMixin):
     """飞书 OpenAPI 客户端"""
 
     pass
