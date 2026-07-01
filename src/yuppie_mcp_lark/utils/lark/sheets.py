@@ -157,9 +157,7 @@ class SheetsMixin:
                 result[t] = str(s.get("sheetId", ""))
         return result
 
-    async def find_sheet_id(
-        self: _LarkMixinProtocol, spreadsheet_token: str, title: str
-    ) -> str:
+    async def find_sheet_id(self: _LarkMixinProtocol, spreadsheet_token: str, title: str) -> str:
         """查找工作表 ID，未找到返回空字符串"""
         try:
             return await self.get_sheet_id(spreadsheet_token, title)
@@ -183,7 +181,16 @@ class SheetsMixin:
         column_name: str,
     ) -> str:
         """根据列名在表头中的位置解析列字母"""
-        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:ZZZ1")
+        meta = await self.get_metainfo(spreadsheet_token)
+        col_count = 0
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                col_count = s.get("columnCount", 0)
+                break
+        if col_count <= 0:
+            raise Exception(f"无法获取工作表 {sheet_id} 的列数")
+        end_col = self._index_to_letter(col_count - 1)
+        headers = await self.read_range(spreadsheet_token, f"{sheet_id}!A1:{end_col}1")
         if not headers:
             raise Exception(f"无法读取表头：{sheet_id}")
         for i, h in enumerate(headers[0]):

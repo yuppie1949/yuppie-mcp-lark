@@ -25,10 +25,18 @@ class SendMessageInput(BaseModel):
 
     receive_id: str = Field(..., min_length=1, description="接收者 ID")
     msg_type: Literal[
-        "text", "post", "image", "file", "audio", "media", "interactive",
+        "text",
+        "post",
+        "image",
+        "file",
+        "audio",
+        "media",
+        "interactive",
     ] = Field("text", description="消息类型，默认 text")
     content: str = Field(
-        ..., min_length=1, max_length=30000,
+        ...,
+        min_length=1,
+        max_length=30000,
         description="消息内容 JSON 字符串，文本≤150KB，卡片/富文本≤30KB",
     )
     receive_id_type: str = Field(

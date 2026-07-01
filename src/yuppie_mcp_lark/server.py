@@ -7,7 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from .tools import bitable, messages, sheets
+from .tools import bitable, messages, sheets, sheets_batch
 from .tools.bitable import SearchRecordsInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
@@ -19,6 +19,13 @@ from .tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     WriteRangeInput,
+)
+from .tools.sheets_batch import (
+    FilterSheetColumnsInput,
+    GetColumnLastValueInput,
+    GetRowsByBatchInput,
+    SetBatchIndexInput,
+    SetHeaderListInput,
 )
 
 mcp = FastMCP("lark_mcp")
@@ -46,7 +53,13 @@ async def tool_send_message(
     ],
     msg_type: Annotated[
         Literal[
-            "text", "post", "image", "file", "audio", "media", "interactive",
+            "text",
+            "post",
+            "image",
+            "file",
+            "audio",
+            "media",
+            "interactive",
         ],
         Field(description="消息类型，默认 text"),
     ] = "text",
@@ -139,9 +152,7 @@ async def tool_search_records(
     ),
 )
 async def tool_get_metainfo(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
 ) -> str:
     """获取电子表格元信息，含工作表列表（标题、sheetId、行数、列数）。"""
     return await sheets.get_metainfo(GetMetainfoInput(spreadsheet_token=spreadsheet_token))
@@ -158,15 +169,11 @@ async def tool_get_metainfo(
     ),
 )
 async def tool_add_sheet(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     title: Annotated[str, Field(description="新工作表标题", min_length=1)],
 ) -> str:
     """添加工作表，返回新 sheetId。"""
-    return await sheets.add_sheet(
-        AddSheetInput(spreadsheet_token=spreadsheet_token, title=title)
-    )
+    return await sheets.add_sheet(AddSheetInput(spreadsheet_token=spreadsheet_token, title=title))
 
 
 @mcp.tool(
@@ -180,9 +187,7 @@ async def tool_add_sheet(
     ),
 )
 async def tool_delete_sheet(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
 ) -> str:
     """删除指定工作表。"""
@@ -202,9 +207,7 @@ async def tool_delete_sheet(
     ),
 )
 async def tool_copy_sheet(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     source_sheet_id: Annotated[str, Field(description="源工作表 ID", min_length=1)],
     title: Annotated[str, Field(description="新工作表标题", min_length=1)],
 ) -> str:
@@ -229,12 +232,8 @@ async def tool_copy_sheet(
     ),
 )
 async def tool_read_range(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
-    range_str: Annotated[
-        str, Field(description="范围，如 Sheet1!A1:C10", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    range_str: Annotated[str, Field(description="范围，如 Sheet1!A1:C10", min_length=1)],
 ) -> str:
     """读取单个范围数据，返回 markdown 表格（超过 10 行仅预览前 10 行）。"""
     return await sheets.read_range(
@@ -253,9 +252,7 @@ async def tool_read_range(
     ),
 )
 async def tool_write_range(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     range_str: Annotated[str, Field(description="范围", min_length=1)],
     values: Annotated[list[list[Any]], Field(description="二维数组")],
 ) -> str:
@@ -280,9 +277,7 @@ async def tool_write_range(
     ),
 )
 async def tool_append_data(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     values: Annotated[list[list[Any]], Field(description="二维数组")],
 ) -> str:
@@ -292,6 +287,143 @@ async def tool_append_data(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,
             values=values,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_filter_sheet_columns",
+    annotations=ToolAnnotations(
+        title="过滤工作表列",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_filter_sheet_columns(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    keep_columns: Annotated[
+        list[str], Field(description="要保留的列名列表，其余列将被删除", min_length=1)
+    ],
+) -> str:
+    """只保留指定列，删除其余列（包括空白列）。"""
+    return await sheets_batch.filter_sheet_columns(
+        FilterSheetColumnsInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            keep_columns=keep_columns,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_set_batch_index",
+    annotations=ToolAnnotations(
+        title="设置批次索引",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_set_batch_index(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    batch_column: Annotated[
+        str, Field(description="批次列名，默认 f_batch_index")
+    ] = "f_batch_index",
+    batch_size: Annotated[int, Field(description="每批行数，默认 10", ge=1, le=1000)] = 10,
+) -> str:
+    """按列设置批次索引，将数据按 batch_size 分组并写入批次号。"""
+    return await sheets_batch.set_batch_index(
+        SetBatchIndexInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            batch_column=batch_column,
+            batch_size=batch_size,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_set_header_list",
+    annotations=ToolAnnotations(
+        title="写入新表头",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_set_header_list(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    header_list: Annotated[list[str], Field(description="新表头列表", min_length=1)],
+    keep_columns: Annotated[
+        int | None, Field(description="保留的原始列数，不指定则从 A 列写入", ge=0)
+    ] = None,
+) -> str:
+    """从指定位置写入新表头。"""
+    return await sheets_batch.set_header_list(
+        SetHeaderListInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            header_list=header_list,
+            keep_columns=keep_columns,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_get_column_last_value",
+    annotations=ToolAnnotations(
+        title="获取列最后一个数值",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_get_column_last_value(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    column_name: Annotated[str, Field(description="列名，将在表头中查找其位置", min_length=1)],
+) -> str:
+    """获取指定列中最后一个数值（跳过表头），用于确定最大批次等场景。"""
+    return await sheets_batch.get_column_last_value(
+        GetColumnLastValueInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            column_name=column_name,
+        )
+    )
+
+
+@mcp.tool(
+    name="lark_get_rows_by_batch",
+    annotations=ToolAnnotations(
+        title="按批次读取行",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_get_rows_by_batch(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    batch_id: Annotated[int, Field(description="批次号，从 1 开始", ge=1)],
+    batch_size: Annotated[int, Field(description="每批行数", ge=1, le=5000)],
+) -> str:
+    """按批次范围读取行数据，返回 markdown 表格。"""
+    return await sheets_batch.get_rows_by_batch(
+        GetRowsByBatchInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            batch_id=batch_id,
+            batch_size=batch_size,
         )
     )
 
@@ -307,15 +439,11 @@ async def tool_append_data(
     ),
 )
 async def tool_delete_dimension(
-    spreadsheet_token: Annotated[
-        str, Field(description="电子表格 token", min_length=1)
-    ],
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     start_index: Annotated[int, Field(description="起始索引（1-based 含）", ge=1)],
     end_index: Annotated[int, Field(description="结束索引（1-based 含）", ge=1)],
-    major_dimension: Annotated[
-        str, Field(description="COLUMNS 或 ROWS，默认 COLUMNS")
-    ] = "COLUMNS",
+    major_dimension: Annotated[str, Field(description="COLUMNS 或 ROWS，默认 COLUMNS")] = "COLUMNS",
 ) -> str:
     """删除行或列（1-based 含首尾，单次最多 5000 行/列）。"""
     return await sheets.delete_dimension(

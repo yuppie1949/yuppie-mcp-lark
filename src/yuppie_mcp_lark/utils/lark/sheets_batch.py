@@ -73,18 +73,42 @@ class SheetsBatchMixin:
         batch_column: str = "f_batch_index",
         batch_size: int = 10,
     ) -> None:
-        """按列设置批次索引"""
-        col_letter = await self._resolve_column_letter(
-            spreadsheet_token, sheet_id, batch_column
-        )
+        """按列设置批次索引，列不存在时自动创建"""
+        try:
+            col_letter = await self._resolve_column_letter(
+                spreadsheet_token, sheet_id, batch_column
+            )
+        except Exception:
+            meta = await self.get_metainfo(spreadsheet_token)
+            col_count = 0
+            for s in meta.get("sheets", []):
+                if str(s.get("sheetId", "")) == sheet_id:
+                    col_count = s.get("columnCount", 0)
+                    break
+            if col_count > 0:
+                end_col = self._index_to_letter(col_count - 1)
+                rng = f"{sheet_id}!A1:{end_col}1"
+                headers = await self.read_range(spreadsheet_token, rng)
+                existing = headers[0] if headers else []
+                while existing and existing[-1] in (None, ""):
+                    existing.pop()
+                col_letter = self._index_to_letter(len(existing))
+            else:
+                col_letter = self._index_to_letter(0)
+            await self.write_range(
+                spreadsheet_token,
+                f"{sheet_id}!{col_letter}1:{col_letter}1",
+                [[batch_column]],
+            )
+
         data = await self.read_range(spreadsheet_token, f"{sheet_id}!A:A")
 
         rows_to_write: list[tuple[int, int]] = []
         batch_num = 1
         row_count = 0
         for i in range(1, len(data)):
-            sku = data[i][0] if i < len(data) and data[i] else ""
-            if sku and sku.strip():
+            val = str(data[i][0]) if i < len(data) and data[i] else ""
+            if val.strip():
                 rows_to_write.append((i + 1, batch_num))
                 row_count += 1
                 if row_count >= batch_size:
@@ -94,14 +118,18 @@ class SheetsBatchMixin:
         if not rows_to_write:
             return
 
+        value_ranges: list[dict[str, Any]] = []
         for batch_val, group in groupby(rows_to_write, key=lambda x: x[1]):
             group_list = list(group)
-            write_range_str = (
-                f"{sheet_id}!{col_letter}{group_list[0][0]}"
-                f":{col_letter}{group_list[-1][0]}"
-            )
-            values = [[str(batch_val)] for _ in group_list]
-            await self.write_range(spreadsheet_token, write_range_str, values)
+            rng = f"{sheet_id}!{col_letter}{group_list[0][0]}:{col_letter}{group_list[-1][0]}"
+            vals = [[str(batch_val)] for _ in group_list]
+            value_ranges.append({"range": rng, "values": vals})
+
+        await self._request(
+            "POST",
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_update",
+            json_data={"valueRanges": value_ranges},
+        )
 
     async def set_header_list(
         self: _LarkMixinProtocol,
@@ -123,24 +151,15 @@ class SheetsBatchMixin:
         spreadsheet_token: str,
         sheet_id: str,
         column_name: str,
-    ) -> int:
-        """获取指定列中最后一个数值"""
-        col_letter = await self._resolve_column_letter(
-            spreadsheet_token, sheet_id, column_name
-        )
-        data = await self.read_range(
-            spreadsheet_token, f"{sheet_id}!{col_letter}:{col_letter}"
-        )
-        max_val = 0
-        for row in data[1:]:
-            if row and row[0]:
-                try:
-                    val = int(float(row[0]))
-                    if val > max_val:
-                        max_val = val
-                except (ValueError, TypeError):
-                    pass
-        return max_val
+    ) -> dict[str, Any]:
+        """获取指定列中最后一个非空值和其行号（跳过表头），返回 {value, row_number}"""
+        col_letter = await self._resolve_column_letter(spreadsheet_token, sheet_id, column_name)
+        data = await self.read_range(spreadsheet_token, f"{sheet_id}!{col_letter}:{col_letter}")
+        for i in range(len(data) - 1, 0, -1):
+            row = data[i]
+            if row and row[0] is not None and row[0] != "":
+                return {"value": row[0], "row_number": i + 1}
+        return {"value": None, "row_number": 0}
 
     async def get_rows_by_batch(
         self: _LarkMixinProtocol,
@@ -150,8 +169,18 @@ class SheetsBatchMixin:
         batch_size: int,
     ) -> list[dict[str, Any]]:
         """按批次获取行数据，返回 [{header: value, row_number: int}]"""
+        meta = await self.get_metainfo(spreadsheet_token)
+        col_count = 0
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                col_count = s.get("columnCount", 0)
+                break
+        if col_count <= 0:
+            return []
+        end_col = self._index_to_letter(col_count - 1)
+
         headers_raw = await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A1:ZZZ1"
+            spreadsheet_token, f"{sheet_id}!A1:{end_col}1"
         )
         if not headers_raw:
             return []
@@ -160,7 +189,7 @@ class SheetsBatchMixin:
         start_row = 2 + (batch_id - 1) * batch_size
         end_row = start_row + batch_size - 1
         all_data = await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A{start_row}:ZZZ{end_row}"
+            spreadsheet_token, f"{sheet_id}!A{start_row}:{end_col}{end_row}"
         )
 
         result: list[dict[str, Any]] = []
@@ -185,9 +214,7 @@ class SheetsBatchMixin:
         if not update_data:
             return
 
-        headers = (await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A1:ZZZ1"
-        ))[0]
+        headers = (await self.read_range(spreadsheet_token, f"{sheet_id}!A1:ZZZ1"))[0]
         col_indices = {h: i for i, h in enumerate(headers)}
 
         value_ranges: list[dict[str, Any]] = []
@@ -214,9 +241,7 @@ class SheetsBatchMixin:
 
             start_letter = cell_updates[0][0]
             end_letter = cell_updates[-1][0]
-            range_str = (
-                f"{sheet_id}!{start_letter}{row_number}:{end_letter}{row_number}"
-            )
+            range_str = f"{sheet_id}!{start_letter}{row_number}:{end_letter}{row_number}"
             values = [[v for _, v in cell_updates]]
             value_ranges.append({"range": range_str, "values": values})
 
@@ -240,9 +265,7 @@ class SheetsBatchMixin:
         if not data:
             return
         headers = list(data[0].keys()) if isinstance(data[0], dict) else []
-        values: list[list[str]] = [
-            [str(row.get(h, "")) for h in headers] for row in data
-        ]
+        values: list[list[str]] = [[str(row.get(h, "")) for h in headers] for row in data]
 
         for i in range(0, len(values), batch_size):
             chunk = values[i : i + batch_size]
