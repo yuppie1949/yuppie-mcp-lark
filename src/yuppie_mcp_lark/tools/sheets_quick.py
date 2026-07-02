@@ -103,7 +103,7 @@ class BatchAppendInput(BaseModel):
     )
 
 
-class BatchAppendFromFileInput(BaseModel):
+class SyncFromFileInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
@@ -283,11 +283,11 @@ async def quick_sheets_batch_append(args: BatchAppendInput) -> str:
         return f"❌ 批量追加失败：{e}"
 
 
-async def quick_sheets_batch_append_from_file(args: BatchAppendFromFileInput) -> str:
+async def quick_sheets_sync_from_file(args: SyncFromFileInput) -> str:
     try:
         _t0 = time.time()
         client = _get_client()
-        await client.quick_sheets_batch_append_from_file(
+        await client.quick_sheets_sync_from_file(
             args.spreadsheet_token,
             args.sheet_id,
             args.file_path,
@@ -296,12 +296,12 @@ async def quick_sheets_batch_append_from_file(args: BatchAppendFromFileInput) ->
         )
         _elapsed = time.time() - _t0
         return (
-            f"✅ 从文件追加完成\n\n"
+            f"✅ 从文件同步完成\n\n"
             f"- **文件**: `{args.file_path}`\n"
             f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
-        return f"❌ 从文件追加失败：{e}"
+        return f"❌ 从文件同步失败：{e}"
 
 
 async def quick_sheets_clear_sheet_content(args: ClearSheetContentInput) -> str:

@@ -324,7 +324,7 @@ class QuickSheetsMixin:
 
         return {"col_count": len(empty_row), "row_count": row_count - start + 1, "start_row": start}
 
-    async def quick_sheets_batch_append_from_file(
+    async def quick_sheets_sync_from_file(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
@@ -334,10 +334,10 @@ class QuickSheetsMixin:
         batch_interval: int = 2,
         data_start: int = 2,
     ) -> None:
-        """从本地 CSV 文件批量追加数据到工作表
+        """从本地 CSV 文件同步数据到工作表
 
         CSV 第一行为表头，后续行为数据行。
-        数据追加到工作表现有数据之后，表头不会写入（需提前设置好）。
+        默认从 data_start 行开始覆盖写入（不清空已有行，仅覆写对应范围）。
         解析后委托 quick_sheets_batch_append 执行写入。
         """
         if not os.path.isfile(file_path):
