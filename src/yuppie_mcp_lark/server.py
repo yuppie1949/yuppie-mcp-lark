@@ -34,7 +34,10 @@ from .tools.sheets_quick import (
     SetHeaderListInput,
 )
 
-mcp = FastMCP("lark_mcp")
+mcp = FastMCP(
+    name="lark_mcp",
+    instructions="飞书开放平台工具集：发送消息（文本/富文本/卡片/文件等）、操作多维表格（搜索记录/过滤排序）、读写电子表格数据、管理工作表（新增/复制/删除/清空）、批量数据处理（追加/更新/按批次读写/从 CSV 同步）。"
+)
 mcp._mcp_server.version = __version__
 
 
