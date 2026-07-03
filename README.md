@@ -15,7 +15,7 @@
 
 ### Claude Code
 
-在 `.mcp.json` 中添加：
+在 `.mcp.json` 中添加（`--refresh` 强制拉取 PyPI 最新版，忽略本地缓存）：
 
 ```json
 {
@@ -23,7 +23,7 @@
     "lark": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["yuppie-mcp-lark"],
+      "args": ["--refresh", "yuppie-mcp-lark"],
       "env": {
         "LARK_APP_ID": "cli_xxx",
         "LARK_APP_SECRET": "xxx"
