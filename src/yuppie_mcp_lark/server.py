@@ -7,6 +7,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
+from . import __version__
 from .tools import bitable, messages, sheets, sheets_quick
 from .tools.bitable import SearchRecordsInput
 from .tools.messages import SendMessageInput
@@ -34,6 +35,7 @@ from .tools.sheets_quick import (
 )
 
 mcp = FastMCP("lark_mcp")
+mcp._mcp_server.version = __version__
 
 
 @mcp.tool(
