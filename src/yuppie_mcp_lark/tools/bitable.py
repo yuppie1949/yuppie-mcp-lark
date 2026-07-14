@@ -302,7 +302,7 @@ async def create_app(args: CreateAppInput) -> str:
         return f"❌ 创建多维表格失败：{e}"
     return (
         f"✅ 创建多维表格成功\n\n"
-        f"- **耗时**: `{_elapsed:.1f}s`"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
         f"- **app_token**: `{app.get('app_token', '')}`\n"
         f"- **name**: {app.get('name', '')}\n"
         f"- **url**: {app.get('url', '')}\n"
@@ -326,7 +326,7 @@ async def copy_app(args: CopyAppInput) -> str:
         return f"❌ 复制多维表格失败：{e}"
     return (
         f"✅ 复制多维表格成功\n\n"
-        f"- **耗时**: `{_elapsed:.1f}s`"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
         f"- **app_token**: `{app.get('app_token', '')}`\n"
         f"- **name**: {app.get('name', '')}\n"
         f"- **url**: {app.get('url', '')}\n"
@@ -343,7 +343,7 @@ async def create_table(args: CreateTableInput) -> str:
         return f"❌ 创建数据表失败：{e}"
     return (
         f"✅ 创建数据表成功\n\n"
-        f"- **耗时**: `{_elapsed:.1f}s`"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
         f"- **table_id**: `{result.get('table_id', '')}`\n"
         f"- **default_view_id**: `{result.get('default_view_id', '')}`\n"
         f"- **field_id_list**: `{result.get('field_id_list', [])}`\n"

@@ -101,7 +101,16 @@ class UpdateDimensionInput(BaseModel):
     end_index: int = Field(..., ge=1, description="结束位置（1-based 含）")
     fixed_size: int | None = Field(None, description="行高或列宽（像素）")
     visible: bool | None = Field(None, description="是否显示行或列")
-    
+
+class WriteImageInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    range: str = Field(..., min_length=1, description='单元格范围，如 "sheetId!A1:A1"')
+    image_base64: str = Field(..., min_length=1, description="图片 base64 编码内容")
+    name: str = Field(..., min_length=1, description='图片文件名，含后缀，如 "test.png"')
+
+
 async def get_metainfo(args: GetMetainfoInput) -> str:
     try:
         _t0 = time.time()
@@ -135,9 +144,9 @@ async def add_sheet(args: AddSheetInput) -> str:
         _elapsed = time.time() - _t0
         return (
             f"✅ 工作表已创建\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`\n"
             f"- **title**: `{args.title}`\n"
             f"- **sheetId**: `{sheet_id}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 创建工作表失败：{e}"
@@ -247,7 +256,7 @@ async def write_range(args: WriteRangeInput) -> str:
         rows = len(args.values)
         return (
             f"✅ 写入完成\n\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
+            f"- **耗时**: `{_elapsed:.1f}s`\n"
             f"- **range**: `{args.range_str}`\n"
             f"- **rows**: `{rows}`\n"
         )
@@ -267,7 +276,7 @@ async def append_data(args: AppendDataInput) -> str:
         rows = len(args.values)
         return (
             f"✅ 追加完成\n\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
+            f"- **耗时**: `{_elapsed:.1f}s`\n"
             f"- **sheet_id**: `{args.sheet_id}`\n"
             f"- **rows**: `{rows}`\n"
         )
@@ -289,21 +298,12 @@ async def delete_dimension(args: DeleteDimensionInput) -> str:
         _elapsed = time.time() - _t0
         return (
             f"✅ 删除完成\n\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
+            f"- **耗时**: `{_elapsed:.1f}s`\n"
             f"- **dimension**: `{args.major_dimension}`\n"
             f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
         )
     except Exception as e:
         return f"❌ 删除失败：{e}"
-
-
-class WriteImageInput(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-
-    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
-    range: str = Field(..., min_length=1, description='单元格范围，如 "sheetId!A1:A1"')
-    image_base64: str = Field(..., min_length=1, description="图片 base64 编码内容")
-    name: str = Field(..., min_length=1, description='图片文件名，含后缀，如 "test.png"')
 
 
 async def write_image(args: WriteImageInput) -> str:
@@ -323,10 +323,6 @@ async def write_image(args: WriteImageInput) -> str:
         f"- **耗时**: `{_elapsed:.1f}s`"
     )
 
-
-
-
-
 async def update_dimension(args: UpdateDimensionInput) -> str:
     try:
         _t0 = time.time()
@@ -345,7 +341,7 @@ async def update_dimension(args: UpdateDimensionInput) -> str:
         return f"❌ 更新行列失败：{e}"
     return (
         f"✅ 行列属性已更新\n\n"
-        f"- **耗时**: `{_elapsed:.1f}s`"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
         f"- **dimension**: `{args.major_dimension}`\n"
         f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
     )
