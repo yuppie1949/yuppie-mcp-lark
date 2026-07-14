@@ -497,8 +497,9 @@ class QuickSheetsMixin:
         start_row: int = 2,
         end_row: int | None = None,
     ) -> dict[str, Any]:
-        """批量设置列样式（自动分批，单次最多 50000 单元格）"""
+        """批量设置列样式（自动分批）"""
         _MAX_CELLS = 50000
+        _MAX_ROWS = 5000  # API 限制：单次最多 5000 行
 
         meta = await self.get_metainfo(spreadsheet_token)
         row_count = 0
@@ -520,8 +521,11 @@ class QuickSheetsMixin:
         else:
             target_cols = [self._index_to_letter(i) for i in range(col_count)]
 
-        # 每列固定行数范围，按单元格上限分批
-        rows_per_batch = max(1, _MAX_CELLS // len(target_cols))
+        # 按单元格上限和行数上限取较小值分批
+        rows_per_batch = min(
+            _MAX_ROWS,
+            max(1, _MAX_CELLS // len(target_cols)),
+        )
         batch_count = (total_rows + rows_per_batch - 1) // rows_per_batch
         for i in range(batch_count):
             r_start = start_row + i * rows_per_batch

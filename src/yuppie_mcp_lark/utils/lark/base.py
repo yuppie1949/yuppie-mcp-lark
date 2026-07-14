@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from typing import Any, Optional, Protocol
 
@@ -266,7 +267,14 @@ class _LarkBase:
                 params=params,
                 json=json_data,
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except json.JSONDecodeError as e:
+                body = resp.text[:500]
+                raise Exception(
+                    f"[{method} {path}] 响应非 JSON（HTTP {resp.status_code}）: {e}。"
+                    f" 原始响应: {body}"
+                )
             code = data.get("code", -1)
             if code == 90217:  # too many request
                 wait = 1.5 * (attempt + 1)

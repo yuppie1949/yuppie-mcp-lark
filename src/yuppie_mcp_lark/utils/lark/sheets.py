@@ -241,7 +241,7 @@ class SheetsMixin:
             在设置边框样式时，单次更新的单元格数量不可超过 30,000 个。
         文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/batch-set-cell-style
         """
-        return await self._post(
+        return await self._put(
             f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/styles_batch_update",
             json_data={"data": data},
         )
