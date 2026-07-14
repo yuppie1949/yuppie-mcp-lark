@@ -24,7 +24,7 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
-from .tools.drive import CopyFileInput
+from .tools.drive import CopyFileInput, DeleteFileInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -160,6 +160,26 @@ async def tool_copy_file(
             file_token=file_token, name=name, folder_token=folder_token,
             file_type=file_type, user_id_type=user_id_type,
         )
+    )
+
+
+@mcp.tool(
+    name="drive_delete_file",
+    annotations=ToolAnnotations(
+        title="删除云文件或文件夹",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_delete_file(
+    file_token: Annotated[str, Field(description="文件或文件夹 token", min_length=1)],
+    file_type: Annotated[str, Field(description="文件类型：file/doc/sheet/bitable/docx/folder")],
+) -> str:
+    """删除云空间内的文件或文件夹（进入回收站）。"""
+    return await drive.delete_file(
+        DeleteFileInput(file_token=file_token, file_type=file_type)
     )
 
 

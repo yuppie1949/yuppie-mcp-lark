@@ -38,3 +38,19 @@ class DriveMixin:
             params=params,
             json_data=body,
         )
+
+    async def delete_file(
+        self: _LarkMixinProtocol,
+        file_token: str,
+        file_type: str,
+    ) -> dict[str, Any]:
+        """删除文件或文件夹
+        该接口不支持并发调用，且调用频率上限为 5 QPS，10000 次/天。否则会返回 1061045 错误码，可通过稍后重试解决。
+
+        文档: https://open.feishu.cn/document/server-docs/docs/drive-v1/file/delete
+        """
+        return await self._request(
+            "DELETE",
+            f"/open-apis/drive/v1/files/{file_token}",
+            params={"type": file_type},
+        )

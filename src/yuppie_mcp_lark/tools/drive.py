@@ -51,3 +51,21 @@ async def copy_file(args: CopyFileInput) -> str:
         f"- **type**: `{f.get('type', '')}`\n"
         f"- **url**: {f.get('url', '')}\n"
     )
+
+
+class DeleteFileInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    file_token: str = Field(..., min_length=1, description="文件或文件夹 token")
+    file_type: str = Field(..., description="文件类型：file/doc/sheet/bitable/docx/folder")
+
+
+async def delete_file(args: DeleteFileInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        await client.delete_file(args.file_token, args.file_type)
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 删除文件失败：{e}"
+    return f"✅ 文件已删除\n- **file_token**: `{args.file_token}`\n- **耗时**: `{_elapsed:.1f}s`"

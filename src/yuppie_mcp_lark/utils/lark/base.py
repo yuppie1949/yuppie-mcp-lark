@@ -54,6 +54,9 @@ class _LarkMixinProtocol(Protocol):
         *,
         user_id_type: str | None = ...,
     ) -> dict[str, Any]: ...
+    async def delete_file(
+        self, file_token: str, file_type: str
+    ) -> dict[str, Any]: ...
 
     # ── BitableMixin ──
     async def search_records(

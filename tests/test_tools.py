@@ -18,7 +18,7 @@ from yuppie_mcp_lark.tools.bitable import (
     UpdateRecordInput,
 )
 from yuppie_mcp_lark.tools.bitable_quick import BitableClearInput
-from yuppie_mcp_lark.tools.drive import CopyFileInput
+from yuppie_mcp_lark.tools.drive import CopyFileInput, DeleteFileInput
 from yuppie_mcp_lark.tools.messages import SendMessageInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
@@ -89,6 +89,16 @@ def test_copy_file_with_all() -> None:
     assert args.file_token == "bascnxxx"
     assert args.file_type == "docx"
 
+
+def test_delete_file_required() -> None:
+    with pytest.raises(ValidationError):
+        DeleteFileInput()
+
+
+def test_delete_file_with_all() -> None:
+    args = DeleteFileInput(file_token="boxcnxxx", file_type="file")
+    assert args.file_token == "boxcnxxx"
+    assert args.file_type == "file"
 
 # ── 多维表格域 ──
 

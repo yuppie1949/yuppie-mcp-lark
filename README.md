@@ -49,7 +49,7 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 43 个）
+## 可用工具（共 44 个）
 
 ### 消息
 
@@ -62,6 +62,7 @@
 | 工具 | 说明 |
 |------|------|
 | `drive_copy_file` | 复制文件到指定文件夹 |
+| `drive_delete_file` | 删除文件或文件夹 |
 
 ### 多维表格
 
