@@ -9,6 +9,7 @@ from __future__ import annotations
 from .base import _LarkBase
 from .bitable import BitableMixin
 from .bitable_quick import QuickBitableMixin
+from .drive import DriveMixin
 from .messages import MessagesMixin
 from .sheets import SheetsMixin
 from .sheets_quick import QuickSheetsMixin
@@ -21,6 +22,7 @@ class LarkClient(
     MessagesMixin,
     BitableMixin,
     QuickBitableMixin,
+    DriveMixin,
     SheetsMixin,
     QuickSheetsMixin,
 ):

@@ -8,7 +8,7 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from . import __version__
-from .tools import bitable, bitable_quick, messages, sheets, sheets_quick
+from .tools import bitable, bitable_quick, drive, messages, sheets, sheets_quick
 from .tools.bitable import (
     BatchCreateRecordsInput,
     BatchDeleteRecordsInput,
@@ -24,6 +24,7 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
+from .tools.drive import CopyFileInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -132,6 +133,32 @@ async def tool_send_message(
             content=content,
             receive_id_type=receive_id_type,
             uuid=uuid,
+        )
+    )
+
+
+@mcp.tool(
+    name="drive_copy_file",
+    annotations=ToolAnnotations(
+        title="复制云文件",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_copy_file(
+    file_token: Annotated[str, Field(description="源文件 token", min_length=1)],
+    name: Annotated[str, Field(description="新文件名称", min_length=1)],
+    folder_token: Annotated[str, Field(description="目标文件夹 token", min_length=1)],
+    file_type: Annotated[str, Field(description="源文件类型：file/doc/sheet/bitable/docx")],
+    user_id_type: Annotated[str | None, Field(description="用户 ID 类型")] = None,
+) -> str:
+    """复制文件到指定文件夹。"""
+    return await drive.copy_file(
+        CopyFileInput(
+            file_token=file_token, name=name, folder_token=folder_token,
+            file_type=file_type, user_id_type=user_id_type,
         )
     )
 

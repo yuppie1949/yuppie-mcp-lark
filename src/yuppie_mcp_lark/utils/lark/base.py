@@ -44,6 +44,17 @@ class _LarkMixinProtocol(Protocol):
         uuid: str | None = ...,
     ) -> dict[str, Any]: ...
 
+    # ── DriveMixin ──
+    async def copy_file(
+        self,
+        file_token: str,
+        name: str,
+        folder_token: str,
+        file_type: str,
+        *,
+        user_id_type: str | None = ...,
+    ) -> dict[str, Any]: ...
+
     # ── BitableMixin ──
     async def search_records(
         self,

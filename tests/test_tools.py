@@ -18,6 +18,7 @@ from yuppie_mcp_lark.tools.bitable import (
     UpdateRecordInput,
 )
 from yuppie_mcp_lark.tools.bitable_quick import BitableClearInput
+from yuppie_mcp_lark.tools.drive import CopyFileInput
 from yuppie_mcp_lark.tools.messages import SendMessageInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
@@ -71,6 +72,22 @@ def test_send_message_forbids_extra() -> None:
         SendMessageInput(
             receive_id="ou_xxx", content="{}", extra_field="bad"
         )
+
+
+# ── 云文档域 ──
+
+def test_copy_file_required() -> None:
+    with pytest.raises(ValidationError):
+        CopyFileInput()
+
+
+def test_copy_file_with_all() -> None:
+    args = CopyFileInput(
+        file_token="bascnxxx", name="new.docx",
+        folder_token="fldxxx", file_type="docx",
+    )
+    assert args.file_token == "bascnxxx"
+    assert args.file_type == "docx"
 
 
 # ── 多维表格域 ──
