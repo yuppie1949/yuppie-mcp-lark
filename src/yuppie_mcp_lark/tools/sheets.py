@@ -110,6 +110,21 @@ class WriteImageInput(BaseModel):
     image_base64: str = Field(..., min_length=1, description="图片 base64 编码内容")
     name: str = Field(..., min_length=1, description='图片文件名，含后缀，如 "test.png"')
 
+class StylesBatchUpdateInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    data: list[dict[str, Any]] = Field(
+        ...,
+        description='样式数据数组，每项含 ranges（范围列表）和 style（样式对象）',
+    )
+
+class CreateSpreadsheetInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    title: str = Field(..., min_length=1, description="电子表格标题")
+    folder_token: str | None = Field(None, description="文件夹 token")
+
 
 async def get_metainfo(args: GetMetainfoInput) -> str:
     try:
@@ -346,17 +361,6 @@ async def update_dimension(args: UpdateDimensionInput) -> str:
         f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
     )
 
-
-class StylesBatchUpdateInput(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
-
-    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
-    data: list[dict[str, Any]] = Field(
-        ...,
-        description='样式数据数组，每项含 ranges（范围列表）和 style（样式对象）',
-    )
-
-
 async def styles_batch_update(args: StylesBatchUpdateInput) -> str:
     try:
         _t0 = time.time()
@@ -371,3 +375,63 @@ async def styles_batch_update(args: StylesBatchUpdateInput) -> str:
         f"- **更新单元格数**: `{total}`\n"
         f"- **耗时**: `{_elapsed:.1f}s`"
     )
+
+async def create_spreadsheet(args: CreateSpreadsheetInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        result = await client.create_spreadsheet(
+            args.title, folder_token=args.folder_token
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 创建电子表格失败：{e}"
+    data = result.get("spreadsheet", {})
+    return (
+        f"✅ 电子表格已创建\n\n"
+        f"- **title**: `{data.get('title', '')}`\n"
+        f"- **spreadsheet_token**: `{data.get('spreadsheet_token', '')}`\n"
+        f"- **url**: {data.get('url', '')}\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+    )
+
+
+async def get_spreadsheet(args: GetMetainfoInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        data = await client.get_spreadsheet(args.spreadsheet_token)
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 获取电子表格信息失败：{e}"
+    sp = data.get("spreadsheet", {})
+    return (
+        f"✅ 查询完成\n\n"
+        f"- **title**: `{sp.get('title', '')}`\n"
+        f"- **spreadsheet_token**: `{sp.get('token', '')}`\n"
+        f"- **url**: {sp.get('url', '')}\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+    )
+
+
+async def query_sheets(args: GetMetainfoInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        data = await client.query_sheets(args.spreadsheet_token)
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 查询工作表失败：{e}"
+    sheets = data.get("sheets", [])
+    if not sheets:
+        return f"未找到工作表\n- **耗时**: `{_elapsed:.1f}s`"
+    lines = [f"✅ 查询完成，共 {len(sheets)} 个工作表\n"]
+    lines.append(f"- **耗时**: `{_elapsed:.1f}s`")
+    lines.append("| index | title | sheet_id | resource_type | hidden |")
+    lines.append("| --- | --- | --- | --- | --- |")
+    for s in sheets:
+        lines.append(
+            f"| {s.get('index', '')} | {s.get('title', '')} | {s.get('sheet_id', '')} | "
+            f"{s.get('resource_type', '')} | {s.get('hidden', '')} |"
+        )
+    return "\n".join(lines)

@@ -246,6 +246,47 @@ class SheetsMixin:
             json_data={"data": data},
         )
 
+    async def create_spreadsheet(
+        self: _LarkMixinProtocol,
+        title: str,
+        *,
+        folder_token: str | None = None,
+    ) -> dict[str, Any]:
+        """创建电子表格
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/spreadsheet/create
+        """
+        body: dict[str, Any] = {"title": title}
+        if folder_token:
+            body["folder_token"] = folder_token
+        return await self._post(
+            f"/open-apis/sheets/v3/spreadsheets",
+            json_data=body,
+        )
+
+    async def get_spreadsheet(
+        self: _LarkMixinProtocol, spreadsheet_token: str
+    ) -> dict[str, Any]:
+        """获取电子表格信息
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/spreadsheet/get
+        """
+        return await self._get(
+            f"/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}",
+        )
+
+    async def query_sheets(
+        self: _LarkMixinProtocol, spreadsheet_token: str
+    ) -> dict[str, Any]:
+        """获取工作表
+        根据电子表格 token 获取表格中所有工作表及其属性信息，包括工作表 ID、标题、索引位置、是否被隐藏等。
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/spreadsheet-sheet/query
+        """
+        return await self._get(
+            f"/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/query",
+        )
+
     # ── 工作表查找 ──
 
     async def find_sheet_ids(

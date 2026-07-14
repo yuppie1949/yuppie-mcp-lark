@@ -23,6 +23,7 @@ from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
     AppendDataInput,
     CopySheetInput,
+    CreateSpreadsheetInput,
     DeleteDimensionInput,
     DeleteSheetInput,
     GetMetainfoInput,
@@ -230,6 +231,17 @@ def test_delete_sheet_required() -> None:
 def test_copy_sheet_required() -> None:
     with pytest.raises(ValidationError):
         CopySheetInput()
+
+
+def test_create_spreadsheet_required() -> None:
+    with pytest.raises(ValidationError):
+        CreateSpreadsheetInput()
+
+
+def test_create_spreadsheet_with_folder() -> None:
+    args = CreateSpreadsheetInput(title="test", folder_token="fldxxx")
+    assert args.title == "test"
+    assert args.folder_token == "fldxxx"
 
 
 def test_read_range_required() -> None:

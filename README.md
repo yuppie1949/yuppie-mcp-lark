@@ -49,7 +49,7 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 39 个）
+## 可用工具（共 42 个）
 
 ### 消息
 
@@ -85,9 +85,12 @@
 | 工具 | 说明 |
 |------|------|
 | `sheets_get_metainfo` | 获取电子表格元信息 |
+| `sheets_get_spreadsheet` | 获取电子表格 v3 信息 |
+| `sheets_query_sheets` | 查询所有工作表 |
 | `sheets_add_sheet` | 添加工作表 |
 | `sheets_delete_sheet` | 删除工作表 |
 | `sheets_copy_sheet` | 复制工作表 |
+| `sheets_create_spreadsheet` | 创建电子表格 |
 | `sheets_read_range` | 读取单范围数据 |
 | `sheets_read_ranges` | 读取多范围数据 |
 | `sheets_write_range` | 写入范围数据 |

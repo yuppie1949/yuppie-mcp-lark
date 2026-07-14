@@ -29,6 +29,7 @@ from .tools.sheets import (
     AddSheetInput,
     AppendDataInput,
     CopySheetInput,
+    CreateSpreadsheetInput,
     DeleteDimensionInput,
     DeleteSheetInput,
     GetMetainfoInput,
@@ -555,6 +556,64 @@ async def tool_copy_sheet(
             title=title,
         )
     )
+
+@mcp.tool(
+    name="sheets_create_spreadsheet",
+    annotations=ToolAnnotations(
+        title="创建电子表格",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_create_spreadsheet(
+    title: Annotated[str, Field(description="电子表格标题", min_length=1)],
+    folder_token: Annotated[str | None, Field(description="文件夹 token")] = None,
+) -> str:
+    """创建一个新的电子表格。"""
+    return await sheets.create_spreadsheet(
+        CreateSpreadsheetInput(title=title, folder_token=folder_token)
+    )
+
+
+@mcp.tool(
+    name="sheets_get_spreadsheet",
+    annotations=ToolAnnotations(
+        title="获取电子表格信息",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_get_spreadsheet(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+) -> str:
+    """获取电子表格的基本信息。"""
+    return await sheets.get_spreadsheet(
+        GetMetainfoInput(spreadsheet_token=spreadsheet_token)
+    )
+
+
+@mcp.tool(
+    name="sheets_query_sheets",
+    annotations=ToolAnnotations(
+        title="查询所有工作表",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_query_sheets(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+) -> str:
+    """查询电子表格中的所有工作表。"""
+    return await sheets.query_sheets(
+        GetMetainfoInput(spreadsheet_token=spreadsheet_token)
+    )
+
 
 @mcp.tool(
     name="sheets_read_range",
