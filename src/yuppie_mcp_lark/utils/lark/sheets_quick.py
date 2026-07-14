@@ -420,9 +420,11 @@ class QuickSheetsMixin:
         name 不传时自动从 image_source 提取文件名。
         """
         import base64
-        from urllib.parse import unquote, urlparse
+        from urllib.parse import urlparse
 
         src = image_source.strip()
+        image_base64 = ""
+        extracted_name = "image.png"
 
         if src.startswith(("http://", "https://")):
             import httpx
@@ -430,19 +432,17 @@ class QuickSheetsMixin:
                 resp = await client.get(src)
                 resp.raise_for_status()
             image_base64 = base64.b64encode(resp.content).decode("utf-8")
-        elif os.path.isfile(unquote(src)):
-            path = unquote(src)
-            with open(path, "rb") as f:
+            parsed_name = urlparse(src).path.split("/")[-1]
+            if parsed_name:
+                extracted_name = parsed_name if "." in parsed_name else f"{parsed_name}.png"
+        elif os.path.isfile(src):
+            with open(src, "rb") as f:
                 image_base64 = base64.b64encode(f.read()).decode("utf-8")
+            extracted_name = os.path.basename(src)
         else:
             image_base64 = src
+            extracted_name = "image.png"
 
-        if name is None:
-            if src.startswith(("http://", "https://")):
-                name = unquote(urlparse(src).path.split("/")[-1]) or "image.png"
-            elif os.path.isfile(unquote(src)):
-                name = os.path.basename(unquote(src))
-            else:
-                name = "image.png"
-
-        return await self.write_image(spreadsheet_token, range, image_base64, name)
+        return await self.write_image(
+            spreadsheet_token, range, image_base64, name or extracted_name,
+        )
