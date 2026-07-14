@@ -124,3 +124,48 @@ async def upload_file(args: UploadFileInput) -> str:
         f"- **耗时**: `{_elapsed:.1f}s`\n"
         f"- **file_token**: `{result.get('file_token', '')}`\n"
     )
+
+
+class ListFilesInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    folder_token: str | None = Field(None, description="文件夹 token，不传则获取根目录")
+    page_size: int | None = Field(None, ge=1, le=200, description="每页数量，最大 200")
+    page_token: str | None = Field(None, description="分页 token")
+    order_by: str | None = Field(None, description="排序字段：EditedTime / CreatedTime")
+    direction: str | None = Field(None, description="排序方向：ASC / DESC")
+    user_id_type: str | None = Field(None, description="用户 ID 类型：open_id / union_id / user_id")
+
+
+async def list_files(args: ListFilesInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        data = await client.list_files(
+            folder_token=args.folder_token,
+            page_size=args.page_size,
+            page_token=args.page_token,
+            order_by=args.order_by,
+            direction=args.direction,
+            user_id_type=args.user_id_type,
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 获取文件清单失败：{e}"
+    files = data.get("files", [])
+    if not files:
+        return f"未找到文件\n- **耗时**: `{_elapsed:.1f}s`"
+    has_more = data.get("has_more", False)
+    next_token = data.get("next_page_token", "")
+    lines = [f"✅ 查询完成，共 {len(files)} 个文件\n"]
+    lines.append(f"\n- **耗时**: `{_elapsed:.1f}s`")
+    if has_more:
+        lines.append(f"> 还有更多数据，next_page_token=`{next_token}`")
+    lines.append("| name | type | token |")
+    lines.append("| --- | --- | --- |")
+    for f in files:
+        lines.append(
+            f"| {f.get('name', '')} | {f.get('type', '')} | {f.get('token', '')} |"
+        )
+
+    return "\n".join(lines)

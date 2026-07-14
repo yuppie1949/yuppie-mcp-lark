@@ -115,3 +115,33 @@ class DriveMixin:
                 data=form_data,
                 files=files,
             )
+
+    async def list_files(
+        self: _LarkMixinProtocol,
+        *,
+        folder_token: str | None = None,
+        page_size: int | None = None,
+        page_token: str | None = None,
+        order_by: str | None = None,
+        direction: str | None = None,
+        user_id_type: str | None = None,
+    ) -> dict[str, Any]:
+        """获取文件夹中的文件清单
+
+        文档: https://open.feishu.cn/document/server-docs/docs/drive-v1/file/list
+        """
+        params: dict[str, Any] = {}
+        if folder_token:
+            params["folder_token"] = folder_token
+        if page_size is not None:
+            params["page_size"] = page_size
+        if page_token:
+            params["page_token"] = page_token
+        if order_by:
+            params["order_by"] = order_by
+        if direction:
+            params["direction"] = direction
+        if user_id_type:
+            params["user_id_type"] = user_id_type
+
+        return await self._get("/open-apis/drive/v1/files", params=params)

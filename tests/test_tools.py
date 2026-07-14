@@ -18,7 +18,7 @@ from yuppie_mcp_lark.tools.bitable import (
     UpdateRecordInput,
 )
 from yuppie_mcp_lark.tools.bitable_quick import BitableClearInput
-from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, UploadFileInput
+from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, ListFilesInput, UploadFileInput
 from yuppie_mcp_lark.tools.messages import SendMessageInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
@@ -123,6 +123,22 @@ def test_upload_file_with_all() -> None:
     )
     assert args.file_path == "/tmp/test.pdf"
     assert args.file_name == "report.pdf"
+
+
+def test_list_files_defaults() -> None:
+    args = ListFilesInput()
+    assert args.folder_token is None
+    assert args.page_size is None
+
+
+def test_list_files_with_folder() -> None:
+    args = ListFilesInput(
+        folder_token="fldxxx", page_size=50,
+        order_by="EditedTime", direction="DESC",
+    )
+    assert args.folder_token == "fldxxx"
+    assert args.page_size == 50
+    assert args.direction == "DESC"
 
 # ── 多维表格域 ──
 

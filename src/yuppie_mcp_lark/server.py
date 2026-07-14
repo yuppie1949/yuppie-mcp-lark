@@ -24,7 +24,7 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
-from .tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, UploadFileInput
+from .tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, ListFilesInput, UploadFileInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -221,6 +221,34 @@ async def tool_upload_file(
         UploadFileInput(
             file_path=file_path, parent_node=parent_node,
             file_name=file_name, checksum=checksum,
+        )
+    )
+
+
+@mcp.tool(
+    name="drive_list_files",
+    annotations=ToolAnnotations(
+        title="获取文件夹文件清单",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_list_files(
+    folder_token: Annotated[str | None, Field(description="文件夹 token，不传则获取根目录")] = None,
+    page_size: Annotated[int | None, Field(description="每页数量，最大 200", ge=1, le=200)] = None,
+    page_token: Annotated[str | None, Field(description="分页 token")] = None,
+    order_by: Annotated[str | None, Field(description="排序：EditedTime / CreatedTime")] = None,
+    direction: Annotated[str | None, Field(description="排序方向：ASC / DESC")] = None,
+    user_id_type: Annotated[str | None, Field(description="用户 ID 类型：open_id / union_id / user_id")] = None,
+) -> str:
+    """获取文件夹中的文件清单，支持分页。"""
+    return await drive.list_files(
+        ListFilesInput(
+            folder_token=folder_token, page_size=page_size,
+            page_token=page_token, order_by=order_by,
+            direction=direction, user_id_type=user_id_type,
         )
     )
 

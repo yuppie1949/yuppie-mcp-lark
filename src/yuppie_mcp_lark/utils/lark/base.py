@@ -71,6 +71,16 @@ class _LarkMixinProtocol(Protocol):
         self, file_token: str, file_type: str
     ) -> dict[str, Any]: ...
     async def check_task(self, task_id: str) -> dict[str, Any]: ...
+    async def list_files(
+        self,
+        *,
+        folder_token: str | None = ...,
+        page_size: int | None = ...,
+        page_token: str | None = ...,
+        order_by: str | None = ...,
+        direction: str | None = ...,
+        user_id_type: str | None = ...,
+    ) -> dict[str, Any]: ...
 
     # ── BitableMixin ──
     async def search_records(

@@ -49,7 +49,7 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 46 个）
+## 可用工具（共 47 个）
 
 ### 消息
 
@@ -65,6 +65,7 @@
 | `drive_delete_file` | 删除文件或文件夹 |
 | `drive_check_task` | 查询异步任务状态 |
 | `drive_upload_file` | 上传文件到云空间（最大 20 MB） |
+| `drive_list_files` | 获取文件夹中的文件清单 |
 
 ### 多维表格
 
