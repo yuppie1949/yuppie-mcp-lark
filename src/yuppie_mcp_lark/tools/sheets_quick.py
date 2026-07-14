@@ -145,9 +145,9 @@ async def quick_sheets_filter_columns(args: FilterSheetColumnsInput) -> str:
         _elapsed = time.time() - _t0
         return (
             "✅ 列过滤完成\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"- **保留列数**: `{len(args.keep_columns)}`\n"
             f"- **sheetId**: `{sheet_id}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 列过滤失败：{e}"
@@ -167,9 +167,9 @@ async def quick_sheets_set_batch_index(args: SetBatchIndexInput) -> str:
         _elapsed = time.time() - _t0
         return (
             "✅ 批次索引已设置\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"- **batch_column**: `{args.batch_column}`\n"
             f"- **batch_size**: `{args.batch_size}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 设置批次索引失败：{e}"
@@ -205,10 +205,10 @@ async def quick_sheets_get_column_last_value(args: GetColumnLastValueInput) -> s
         _elapsed = time.time() - _t0
         return (
             f"查询完成\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"- **列**: `{args.column_name}`\n"
             f"- **最后一个非空值**: `{result['value']}`\n"
             f"- **行号**: `{result['row_number']}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 查询失败：{e}"
@@ -233,8 +233,8 @@ async def quick_sheets_get_rows_by_batch(args: GetRowsByBatchInput) -> str:
     body = "\n".join("| " + " | ".join(str(r.get(k, "")) for k in keys) + " |" for r in rows)
     return (
         f"查询完成\n\n"
-        f"- **行数**: `{len(rows)}`\n"
         f"- **耗时**: `{_elapsed:.1f}s`\n\n"
+        f"- **行数**: `{len(rows)}`\n"
         f"{header}\n{sep}\n{body}"
     )
 
@@ -255,8 +255,8 @@ async def quick_sheets_batch_update(args: BatchUpdateInput) -> str:
         _elapsed = time.time() - _t0
         return (
             "✅ 批量更新完成\n\n"
-            f"- **更新行数**: `{len(args.update_data)}`\n"
             f"- **耗时**: `{_elapsed:.1f}s`"
+            f"- **更新行数**: `{len(args.update_data)}`\n"
         )
     except Exception as e:
         return f"❌ 批量更新失败：{e}"
@@ -297,8 +297,8 @@ async def quick_sheets_sync_from_file(args: SyncFromFileInput) -> str:
         _elapsed = time.time() - _t0
         return (
             f"✅ 从文件同步完成\n\n"
-            f"- **文件**: `{args.file_path}`\n"
             f"- **耗时**: `{_elapsed:.1f}s`"
+            f"- **文件**: `{args.file_path}`\n"
         )
     except Exception as e:
         return f"❌ 从文件同步失败：{e}"
@@ -319,9 +319,9 @@ async def quick_sheets_clear_content(args: ClearSheetContentInput) -> str:
         col_label = f"**清空列数**: `{info['col_count']}`\n" if info["col_count"] else ""
         return (
             "✅ 工作表内容已清空\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"{col_label}"
             f"- **清空行数**: `{info['row_count']}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 清空工作表内容失败：{e}"

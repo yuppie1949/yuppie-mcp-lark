@@ -27,6 +27,7 @@ from yuppie_mcp_lark.tools.sheets import (
     DeleteSheetInput,
     GetMetainfoInput,
     ReadRangeInput,
+    ReadRangesInput,
     WriteRangeInput,
 )
 
@@ -236,6 +237,31 @@ def test_read_range_required() -> None:
 def test_write_range_required() -> None:
     with pytest.raises(ValidationError):
         WriteRangeInput()
+
+
+def test_read_ranges_required() -> None:
+    with pytest.raises(ValidationError):
+        ReadRangesInput()
+
+
+def test_read_ranges_with_defaults() -> None:
+    args = ReadRangesInput(spreadsheet_token="x", ranges="sheet1!A1:B2")
+    assert args.value_render_option is None
+    assert args.date_time_render_option is None
+    assert args.user_id_type is None
+
+
+def test_read_ranges_with_options() -> None:
+    args = ReadRangesInput(
+        spreadsheet_token="x",
+        ranges="sheet1!A1:B2,sheet2!C1:D3",
+        value_render_option="FormattedValue",
+        date_time_render_option="FormattedString",
+        user_id_type="open_id",
+    )
+    assert args.value_render_option == "FormattedValue"
+    assert args.date_time_render_option == "FormattedString"
+    assert args.user_id_type == "open_id"
 
 
 def test_append_data_required() -> None:

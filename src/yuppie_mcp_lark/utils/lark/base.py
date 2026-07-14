@@ -64,7 +64,16 @@ class _LarkMixinProtocol(Protocol):
 
     # ── SheetsMixin ──
     async def get_metainfo(self, spreadsheet_token: str) -> dict[str, Any]: ...
-    async def read_range(self, spreadsheet_token: str, range_str: str) -> list[list[Any]]: ...
+    async def read_range(self, spreadsheet_token: str, range_str: str) -> dict[str, Any]: ...
+    async def read_ranges(
+        self,
+        spreadsheet_token: str,
+        ranges: str,
+        *,
+        value_render_option: str | None = ...,
+        date_time_render_option: str | None = ...,
+        user_id_type: str | None = ...,
+    ) -> list[dict[str, Any]]: ...
     async def write_range(
         self, spreadsheet_token: str, range_str: str, values: list[list[Any]]
     ) -> dict[str, Any]: ...

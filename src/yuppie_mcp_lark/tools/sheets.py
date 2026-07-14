@@ -55,6 +55,15 @@ class ReadRangeInput(BaseModel):
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
     range_str: str = Field(..., min_length=1, description="范围，如 {sheetId}!A1:C10")
 
+class ReadRangesInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    ranges: str = Field(..., min_length=1, description='多个范围，逗号分隔，如 "sheetId1!A2:B6,sheetId2!B1:C8"')
+    value_render_option: str | None = Field(None, description='值渲染选项：ToString / Formula / FormattedValue / UnformattedValue')
+    date_time_render_option: str | None = Field(None, description='日期时间渲染选项：FormattedString')
+    user_id_type: str | None = Field(None, description='用户 ID 类型：open_id / union_id')
+
 
 class WriteRangeInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
@@ -159,25 +168,64 @@ async def read_range(args: ReadRangeInput) -> str:
     try:
         _t0 = time.time()
         client = _get_client()
-        data = await client.read_range(args.spreadsheet_token, args.range_str)
+        vr = await client.read_range(args.spreadsheet_token, args.range_str)
         _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 读取失败：{e}"
-    if not data:
+    values = vr.get("values", [])
+    if not values:
         return f"查询完成\n\n- **行数**: `0`\n- **耗时**: `{_elapsed:.1f}s`"
-    rows = len(data)
-    cols = max(len(r) for r in data)
+    rows = len(values)
+    cols = max(len(r) for r in values)
     header = "| " + " | ".join(f"col{i}" for i in range(cols)) + " |"
     sep = "| " + " | ".join("---" for _ in range(cols)) + " |"
     body = "\n".join(
         "| " + " | ".join(str(r[i]) if i < len(r) else "" for i in range(cols)) + " |"
-        for r in data
+        for r in values
     )
     return (
         f"查询完成\n\n"
         f"- **行数**: `{rows}`\n- **耗时**: `{_elapsed:.1f}s`\n\n"
         f"{header}\n{sep}\n{body}"
     )
+
+async def read_ranges(args: ReadRangesInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        value_ranges = await client.read_ranges(
+            args.spreadsheet_token,
+            args.ranges,
+            value_render_option=args.value_render_option,
+            date_time_render_option=args.date_time_render_option,
+            user_id_type=args.user_id_type,
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 读取失败：{e}"
+
+    if not value_ranges:
+        return "未读取到数据"
+
+    lines = [f"✅ 读取完成（{_elapsed:.1f}s）\n"]
+    for vr in value_ranges:
+        range_name = vr.get("range", "?")
+        values = vr.get("values", [])
+        if not values:
+            continue
+        keys = values[0]
+        section = [f"### {range_name}"]
+        header = "| " + " | ".join(str(k) for k in keys) + " |"
+        sep = "| " + " | ".join("---" for _ in keys) + " |"
+        body = "\n".join(
+            "| " + " | ".join(str(cell) for cell in row) + " |"
+            for row in values[1:]
+        )
+        section.append(header)
+        section.append(sep)
+        section.append(body)
+        lines.append("\n".join(section))
+    return "\n\n".join(lines)
 
 
 async def write_range(args: WriteRangeInput) -> str:
@@ -189,9 +237,9 @@ async def write_range(args: WriteRangeInput) -> str:
         rows = len(args.values)
         return (
             f"✅ 写入完成\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"- **range**: `{args.range_str}`\n"
             f"- **rows**: `{rows}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 写入失败：{e}"
@@ -209,9 +257,9 @@ async def append_data(args: AppendDataInput) -> str:
         rows = len(args.values)
         return (
             f"✅ 追加完成\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"- **sheet_id**: `{args.sheet_id}`\n"
             f"- **rows**: `{rows}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 追加失败：{e}"
@@ -231,9 +279,9 @@ async def delete_dimension(args: DeleteDimensionInput) -> str:
         _elapsed = time.time() - _t0
         return (
             f"✅ 删除完成\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`"
             f"- **dimension**: `{args.major_dimension}`\n"
             f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
         )
     except Exception as e:
         return f"❌ 删除失败：{e}"

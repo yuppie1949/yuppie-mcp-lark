@@ -33,6 +33,7 @@ from .tools.sheets import (
     DeleteSheetInput,
     GetMetainfoInput,
     ReadRangeInput,
+    ReadRangesInput,
     WriteRangeInput,
 )
 from .tools.sheets_quick import (
@@ -566,6 +567,41 @@ async def tool_read_range(
     """读取单个范围数据，返回 markdown 表格（超过 10 行仅预览前 10 行）。"""
     return await sheets.read_range(
         ReadRangeInput(spreadsheet_token=spreadsheet_token, range_str=range_str)
+    )
+
+
+@mcp.tool(
+    name="sheets_read_ranges",
+    annotations=ToolAnnotations(
+        title="读取多个范围数据",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_read_ranges(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    ranges: Annotated[str, Field(description='多个范围，逗号分隔，如 "sheetId1!A2:B6,sheetId2!B1:C8"', min_length=1)],
+    value_render_option: Annotated[
+        str | None, Field(description="值渲染选项：ToString / Formula / FormattedValue / UnformattedValue")
+    ] = None,
+    date_time_render_option: Annotated[
+        str | None, Field(description="日期时间渲染选项：FormattedString")
+    ] = None,
+    user_id_type: Annotated[
+        str | None, Field(description="用户 ID 类型：open_id / union_id")
+    ] = None,
+) -> str:
+    """读取多个范围数据，每个范围以 markdown 表格呈现。"""
+    return await sheets.read_ranges(
+        ReadRangesInput(
+            spreadsheet_token=spreadsheet_token,
+            ranges=ranges,
+            value_render_option=value_render_option,
+            date_time_render_option=date_time_render_option,
+            user_id_type=user_id_type,
+        )
     )
 
 

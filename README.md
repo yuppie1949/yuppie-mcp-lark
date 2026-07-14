@@ -49,7 +49,7 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 29 个）
+## 可用工具（共 30 个）
 
 ### 消息
 
@@ -88,7 +88,8 @@
 | `sheets_add_sheet` | 添加工作表 |
 | `sheets_delete_sheet` | 删除工作表 |
 | `sheets_copy_sheet` | 复制工作表 |
-| `sheets_read_range` | 读取范围数据 |
+| `sheets_read_range` | 读取单范围数据 |
+| `sheets_read_ranges` | 读取多范围数据 |
 | `sheets_write_range` | 写入范围数据 |
 | `sheets_append_data` | 追加数据 |
 | `sheets_delete_dimension` | 删除行列 |

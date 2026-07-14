@@ -71,15 +71,41 @@ class SheetsMixin:
 
     async def read_range(
         self: _LarkMixinProtocol, spreadsheet_token: str, range_str: str
-    ) -> list[list[Any]]:
-        """读取单个范围数据，返回二维数组
-
+    ) -> dict[str, Any]:
+        """读取单个范围数据，返回 valueRange 对象 {range, values, ...}
         文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/reading-a-single-range
         """
         data = await self._get(
             f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values/{range_str}",
         )
-        return data.get("valueRange", {}).get("values", [])  # type: ignore[no-any-return]
+        return data.get("valueRange", {})  # type: ignore[no-any-return]
+
+    async def read_ranges(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        ranges: str,
+        *,
+        value_render_option: str | None = None,
+        date_time_render_option: str | None = None,
+        user_id_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """读取多个范围数据
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/reading-multiple-ranges
+        """
+        params: dict[str, Any] = {"ranges": ranges}
+        if value_render_option:
+            params["valueRenderOption"] = value_render_option
+        if date_time_render_option:
+            params["dateTimeRenderOption"] = date_time_render_option
+        if user_id_type:
+            params["user_id_type"] = user_id_type
+
+        data = await self._get(
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_batch_get",
+            params=params,
+        )
+        return data.get("valueRanges", [])  # type: ignore[no-any-return]
 
     async def write_range(
         self: _LarkMixinProtocol,
@@ -234,7 +260,7 @@ class SheetsMixin:
                 headers = await self.read_range(
                     spreadsheet_token, f"{sheet_id}!A{header_row}:{end_col}{header_row}"
                 )
-                existing = headers[0] if headers else []
+                existing = headers.get("values", [[]])[0]
                 while existing and existing[-1] in (None, ""):
                     existing.pop()
                 col_letter = self._index_to_letter(len(existing))
@@ -262,7 +288,8 @@ class SheetsMixin:
         if col_count <= 0:
             raise Exception(f"无法获取工作表 {sheet_id} 的列数")
         rng = f"{sheet_id}!A{header_row}:{end_col}{header_row}"
-        headers = await self.read_range(spreadsheet_token, rng)
+        result = await self.read_range(spreadsheet_token, rng)
+        headers = result.get("values", [])
         if not headers:
             raise Exception(f"无法读取表头：{sheet_id}")
         for i, h in enumerate(headers[0]):

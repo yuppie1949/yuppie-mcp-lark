@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -146,43 +147,52 @@ class DeleteTableInput(BaseModel):
 
 async def create_record(args: CreateRecordInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         record = await client.create_record(args.app_token, args.table_id, args.fields)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 创建记录失败：{e}"
     return (
         f"✅ 创建记录成功\n\n"
         f"- **record_id**: `{record.get('record_id', '')}`\n"
-        f"- **fields**: `{record.get('fields', {})}`"
+        f"- **fields**: `{record.get('fields', {})}`\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
     )
 
 
 async def update_record(args: UpdateRecordInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         record = await client.update_record(
             args.app_token, args.table_id, args.record_id, args.fields
         )
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 更新记录失败：{e}"
     return (
         f"✅ 更新记录成功\n\n"
         f"- **record_id**: `{record.get('record_id', '')}`\n"
-        f"- **fields**: `{record.get('fields', {})}`"
+        f"- **fields**: `{record.get('fields', {})}`\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
     )
 
 
 async def delete_record(args: DeleteRecordInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.delete_record(args.app_token, args.table_id, args.record_id)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 删除记录失败：{e}"
-    return f"✅ 已删除记录 `{args.record_id}`"
+    return f"✅ 已删除记录 `{args.record_id}`\n- **耗时**: `{_elapsed:.1f}s`"
 
 
 async def search_records(args: SearchRecordsInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         data = await client.search_records(
             args.app_token,
@@ -196,6 +206,7 @@ async def search_records(args: SearchRecordsInput) -> str:
             automatic_fields=args.automatic_fields,
             user_id_type=args.user_id_type,
         )
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 搜索失败：{e}"
 
@@ -204,38 +215,43 @@ async def search_records(args: SearchRecordsInput) -> str:
     has_more = data.get("has_more", False)
     page_token = data.get("page_token", "")
     if not items:
-        return "查询完成，无匹配记录"
+        return f"✅ 查询完成，无匹配记录\n- **耗时**: `{_elapsed:.1f}s`"
 
     keys = list(items[0].keys())
     header = "| " + " | ".join(keys) + " |"
     sep = "| " + " | ".join("---" for _ in keys) + " |"
     body = "\n".join("| " + " | ".join(str(item.get(k, "")) for k in keys) + " |" for item in items)
     more_hint = f"\n\n> 还有更多数据，page_token=`{page_token}`" if has_more else ""
-    return f"查询完成，共 {total} 条记录\n\n{header}\n{sep}\n{body}{more_hint}"
+    return f"✅ 查询完成，共 {total} 条记录\n- **耗时**: `{_elapsed:.1f}s`\n\n{header}\n{sep}\n{body}{more_hint}"
 
 
 async def batch_create_records(args: BatchCreateRecordsInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         result = await client.batch_create_records(args.app_token, args.table_id, args.records)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 批量创建记录失败：{e}"
     records = result.get("records", [])
-    return f"✅ 批量创建记录成功，共 {len(records)} 条"
+    return f"✅ 批量创建记录成功，共 {len(records)} 条\n- **耗时**: `{_elapsed:.1f}s`"
 
 
 async def batch_update_records(args: BatchUpdateRecordsInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         result = await client.batch_update_records(args.app_token, args.table_id, args.records)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 批量更新记录失败：{e}"
     records = result.get("records", [])
-    return f"✅ 批量更新记录成功，共 {len(records)} 条"
+    return f"✅ 批量更新记录成功，共 {len(records)} 条\n- **耗时**: `{_elapsed:.1f}s`"
 
 
 async def batch_get_records(args: BatchGetRecordsInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         result = await client.batch_get_records(
             args.app_token,
@@ -245,11 +261,12 @@ async def batch_get_records(args: BatchGetRecordsInput) -> str:
             with_shared_url=args.with_shared_url,
             automatic_fields=args.automatic_fields,
         )
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 批量获取记录失败：{e}"
     records = result.get("records", [])
     if not records:
-        return "未找到记录"
+        return f"✅ 未找到记录\n- **耗时**: `{_elapsed:.1f}s`"
     keys = list(records[0].get("fields", {}).keys())
     header = "| record_id | " + " | ".join(keys) + " |"
     sep = "| --- | " + " | ".join("---" for _ in keys) + " |"
@@ -259,37 +276,43 @@ async def batch_get_records(args: BatchGetRecordsInput) -> str:
         + " |"
         for r in records
     )
-    return f"共 {len(records)} 条记录\n\n{header}\n{sep}\n{body}"
+    return f"✅ 查询完成，共 {len(records)} 条记录\n- **耗时**: `{_elapsed:.1f}s`\n\n{header}\n{sep}\n{body}"
 
 
 async def batch_delete_records(args: BatchDeleteRecordsInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.batch_delete_records(args.app_token, args.table_id, args.record_ids)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 批量删除记录失败：{e}"
-    return f"✅ 已批量删除 {len(args.record_ids)} 条记录"
+    return f"✅ 已批量删除 {len(args.record_ids)} 条记录\n- **耗时**: `{_elapsed:.1f}s`"
 
 
 async def create_app(args: CreateAppInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         app = await client.create_app(
             args.name, folder_token=args.folder_token, time_zone=args.time_zone
         )
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 创建多维表格失败：{e}"
     return (
         f"✅ 创建多维表格成功\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
         f"- **app_token**: `{app.get('app_token', '')}`\n"
         f"- **name**: {app.get('name', '')}\n"
         f"- **url**: {app.get('url', '')}\n"
-        f"- **default_table_id**: `{app.get('default_table_id', '')}`"
+        f"- **default_table_id**: `{app.get('default_table_id', '')}`\n"
     )
 
 
 async def copy_app(args: CopyAppInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         app = await client.copy_app(
             args.app_token,
@@ -298,34 +321,41 @@ async def copy_app(args: CopyAppInput) -> str:
             without_content=args.without_content,
             time_zone=args.time_zone,
         )
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 复制多维表格失败：{e}"
     return (
         f"✅ 复制多维表格成功\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
         f"- **app_token**: `{app.get('app_token', '')}`\n"
         f"- **name**: {app.get('name', '')}\n"
-        f"- **url**: {app.get('url', '')}"
+        f"- **url**: {app.get('url', '')}\n"
     )
 
 
 async def create_table(args: CreateTableInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         result = await client.create_table(args.app_token, args.table)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 创建数据表失败：{e}"
     return (
         f"✅ 创建数据表成功\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
         f"- **table_id**: `{result.get('table_id', '')}`\n"
         f"- **default_view_id**: `{result.get('default_view_id', '')}`\n"
-        f"- **field_id_list**: `{result.get('field_id_list', [])}`"
+        f"- **field_id_list**: `{result.get('field_id_list', [])}`\n"
     )
 
 
 async def delete_table(args: DeleteTableInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         await client.delete_table(args.app_token, args.table_id)
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 删除数据表失败：{e}"
-    return f"✅ 已删除数据表 `{args.table_id}`"
+    return f"✅ 已删除数据表 `{args.table_id}`\n- **耗时**: `{_elapsed:.1f}s`"

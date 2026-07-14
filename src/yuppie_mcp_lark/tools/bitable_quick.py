@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -31,6 +32,7 @@ class BitableClearInput(BaseModel):
 
 async def quick_bitable_clear(args: BitableClearInput) -> str:
     try:
+        _t0 = time.time()
         client = _get_client()
         result = await client.bitable_clear(
             args.app_token,
@@ -38,6 +40,7 @@ async def quick_bitable_clear(args: BitableClearInput) -> str:
             filter=args.filter,
             sort=args.sort,
         )
+        _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 清空多维表格失败：{e}"
 
@@ -47,9 +50,12 @@ async def quick_bitable_clear(args: BitableClearInput) -> str:
     errors = result.get("errors", [])
 
     if total_batches == 0:
-        return "无需删除，表中无数据"
+        return f"✅ 无需删除，表中无数据\n- **耗时**: `{_elapsed:.1f}s`"
 
-    lines = [f"✅ 清空完成，共删除 {deleted} 条记录（{total_batches} 批）"]
+    lines = [
+        f"✅ 清空完成，共删除 {deleted} 条记录（{total_batches} 批）",
+        f"- **耗时**: `{_elapsed:.1f}s`",
+    ]
     if failed > 0:
         lines.append(f"⚠️ 其中 {failed} 批失败")
         for err in errors:
