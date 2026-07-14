@@ -34,6 +34,7 @@ from .tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     ReadRangesInput,
+    StylesBatchUpdateInput,
     UpdateDimensionInput,
     WriteImageInput,
     WriteRangeInput,
@@ -48,6 +49,7 @@ from .tools.sheets_quick import (
     GetRowsByBatchInput,
     QuickWriteImageInput,
     SetBatchIndexInput,
+    SetColumnStyleInput,
     SetRowHeightInput,
     SetHeaderListInput,
     SyncFromFileInput,
@@ -750,6 +752,29 @@ async def tool_update_dimension(
 
 
 @mcp.tool(
+    name="sheets_styles_batch_update",
+    annotations=ToolAnnotations(
+        title="批量设置单元格样式",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_styles_batch_update(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    data: Annotated[
+        list[dict[str, Any]],
+        Field(description='样式数据，每项含 ranges（范围列表）和 style（样式对象）'),
+    ],
+) -> str:
+    """批量设置单元格样式，单次最多 50000 个单元格。"""
+    return await sheets.styles_batch_update(
+        StylesBatchUpdateInput(spreadsheet_token=spreadsheet_token, data=data)
+    )
+
+
+@mcp.tool(
     name="quick_sheets_filter_columns",
     annotations=ToolAnnotations(
         title="过滤工作表列",
@@ -1046,6 +1071,39 @@ async def tool_quick_sheets_set_row_height(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,
             height=height,
+            start_row=start_row,
+            end_row=end_row,
+        )
+    )
+
+
+@mcp.tool(
+    name="quick_sheets_set_column_style",
+    annotations=ToolAnnotations(
+        title="批量设置列样式",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_sheets_set_column_style(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    style: Annotated[dict[str, Any], Field(description="样式配置，传给 styles_batch_update 的 style 对象")],
+    columns: Annotated[
+        list[str] | None, Field(description='指定列字母列表，如 ["A", "C"]。不传则全部列')
+    ] = None,
+    start_row: Annotated[int, Field(description="起始行号，默认 2（跳过表头）", ge=1)] = 2,
+    end_row: Annotated[int | None, Field(description="结束行号，不传则到最后一行")] = None,
+) -> str:
+    """批量设置列样式（自动分批），支持单列、多列或全部列。"""
+    return await sheets_quick.quick_sheets_set_column_style(
+        SetColumnStyleInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            style=style,
+            columns=columns,
             start_row=start_row,
             end_row=end_row,
         )

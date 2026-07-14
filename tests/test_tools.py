@@ -28,6 +28,7 @@ from yuppie_mcp_lark.tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     ReadRangesInput,
+    StylesBatchUpdateInput,
     UpdateDimensionInput,
     WriteImageInput,
     WriteRangeInput,
@@ -325,7 +326,7 @@ def test_delete_dimension_defaults_and_required() -> None:
 
 # ── 电子表格快捷操作域 ──
 
-from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput, QuickWriteImageInput, SetRowHeightInput
+from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput, QuickWriteImageInput, SetColumnStyleInput, SetRowHeightInput
 
 
 def test_clear_sheet_content_required() -> None:
@@ -401,3 +402,41 @@ def test_set_row_height_full() -> None:
     assert args.height == 40
     assert args.start_row == 1
     assert args.end_row == 100
+
+
+def test_styles_batch_update_required() -> None:
+    with pytest.raises(ValidationError):
+        StylesBatchUpdateInput()
+
+
+def test_styles_batch_update_with_data() -> None:
+    args = StylesBatchUpdateInput(
+        spreadsheet_token="x",
+        data=[{"ranges": ["sheet1!A1:B2"], "style": {"font": {"bold": True}}}],
+    )
+    assert len(args.data) == 1
+
+
+def test_set_column_style_required() -> None:
+    with pytest.raises(ValidationError):
+        SetColumnStyleInput()
+
+
+def test_set_column_style_defaults() -> None:
+    args = SetColumnStyleInput(
+        spreadsheet_token="x", sheet_id="y",
+        style={"font": {"bold": True}},
+    )
+    assert args.start_row == 2
+    assert args.columns is None
+
+
+def test_set_column_style_with_columns() -> None:
+    args = SetColumnStyleInput(
+        spreadsheet_token="x", sheet_id="y",
+        style={"backColor": "#ff0000"},
+        columns=["A", "C"],
+        start_row=1,
+    )
+    assert args.columns == ["A", "C"]
+    assert args.start_row == 1

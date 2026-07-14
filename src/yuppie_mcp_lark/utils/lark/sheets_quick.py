@@ -486,3 +486,52 @@ class QuickSheetsMixin:
             "updated_rows": data_end - start_row + 1,
             "batch_count": batch_count,
         }
+
+    async def quick_sheets_set_column_style(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        style: dict[str, Any],
+        *,
+        columns: list[str] | None = None,
+        start_row: int = 2,
+        end_row: int | None = None,
+    ) -> dict[str, Any]:
+        """批量设置列样式（自动分批，单次最多 50000 单元格）"""
+        _MAX_CELLS = 50000
+
+        meta = await self.get_metainfo(spreadsheet_token)
+        row_count = 0
+        col_count = 0
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                col_count = s.get("columnCount", 0)
+                row_count = s.get("rowCount", 0)
+                break
+
+        data_end = end_row if end_row is not None else row_count
+        if data_end < start_row:
+            return {"updated_cells": 0, "batch_count": 0}
+
+        total_rows = data_end - start_row + 1
+        target_cols: list[str]
+        if columns:
+            target_cols = columns
+        else:
+            target_cols = [self._index_to_letter(i) for i in range(col_count)]
+
+        # 每列固定行数范围，按单元格上限分批
+        rows_per_batch = max(1, _MAX_CELLS // len(target_cols))
+        batch_count = (total_rows + rows_per_batch - 1) // rows_per_batch
+        for i in range(batch_count):
+            r_start = start_row + i * rows_per_batch
+            r_end = min(r_start + rows_per_batch - 1, data_end)
+            ranges = [f"{sheet_id}!{c}{r_start}:{c}{r_end}" for c in target_cols]
+            await self.styles_batch_update(
+                spreadsheet_token, [{"ranges": ranges, "style": style}],
+            )
+
+        return {
+            "updated_cells": total_rows * len(target_cols),
+            "batch_count": batch_count,
+        }

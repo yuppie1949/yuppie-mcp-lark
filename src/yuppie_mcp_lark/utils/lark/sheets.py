@@ -230,6 +230,22 @@ class SheetsMixin:
             },
         )
 
+    async def styles_batch_update(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        data: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """批量设置单元格样式
+        使用限制
+            单次设置的范围不可超过 5,000 行 100 列。
+            在设置边框样式时，单次更新的单元格数量不可超过 30,000 个。
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/batch-set-cell-style
+        """
+        return await self._post(
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/styles_batch_update",
+            json_data={"data": data},
+        )
+
     # ── 工作表查找 ──
 
     async def find_sheet_ids(

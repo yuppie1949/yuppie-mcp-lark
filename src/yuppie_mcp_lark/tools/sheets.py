@@ -345,3 +345,29 @@ async def update_dimension(args: UpdateDimensionInput) -> str:
         f"- **dimension**: `{args.major_dimension}`\n"
         f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
     )
+
+
+class StylesBatchUpdateInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    data: list[dict[str, Any]] = Field(
+        ...,
+        description='样式数据数组，每项含 ranges（范围列表）和 style（样式对象）',
+    )
+
+
+async def styles_batch_update(args: StylesBatchUpdateInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        result = await client.styles_batch_update(args.spreadsheet_token, args.data)
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 批量设置样式失败：{e}"
+    total = result.get("totalUpdatedCells", 0)
+    return (
+        f"✅ 样式已更新\n\n"
+        f"- **更新单元格数**: `{total}`\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+    )

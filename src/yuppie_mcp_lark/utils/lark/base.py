@@ -96,6 +96,9 @@ class _LarkMixinProtocol(Protocol):
         start_index: int,
         end_index: int,
     ) -> None: ...
+    async def styles_batch_update(
+        self, spreadsheet_token: str, data: list[dict[str, Any]]
+    ) -> dict[str, Any]: ...
     async def update_dimension(
         self,
         spreadsheet_token: str,
@@ -179,6 +182,16 @@ class _LarkMixinProtocol(Protocol):
         sheet_id: str,
         height: int,
         *,
+        start_row: int = ...,
+        end_row: int | None = ...,
+    ) -> dict[str, Any]: ...
+    async def quick_sheets_set_column_style(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        style: dict[str, Any],
+        *,
+        columns: list[str] | None = ...,
         start_row: int = ...,
         end_row: int | None = ...,
     ) -> dict[str, Any]: ...
