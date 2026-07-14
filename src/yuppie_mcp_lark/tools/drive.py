@@ -64,8 +64,36 @@ async def delete_file(args: DeleteFileInput) -> str:
     try:
         _t0 = time.time()
         client = _get_client()
-        await client.delete_file(args.file_token, args.file_type)
+        result = await client.delete_file(args.file_token, args.file_type)
         _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 删除文件失败：{e}"
-    return f"✅ 文件已删除\n- **file_token**: `{args.file_token}`\n- **耗时**: `{_elapsed:.1f}s`"
+    lines = [f"✅ 文件已删除", f"- **file_token**: `{args.file_token}`"]
+    lines.append(f"- **耗时**: `{_elapsed:.1f}s`")
+    task_id = result.get("task_id", "")
+    if task_id:
+        lines.append(f"- **task_id**: `{task_id}`（异步任务，可用 drive_check_task 查询）")
+    return "\n".join(lines)
+
+
+class CheckTaskInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    task_id: str = Field(..., min_length=1, description="异步任务 ID")
+
+
+async def check_task(args: CheckTaskInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        data = await client.check_task(args.task_id)
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 查询任务状态失败：{e}"
+    status = data.get("status", "unknown")
+    return (
+        f"✅ 任务状态查询完成\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
+        f"- **task_id**: `{args.task_id}`\n"
+        f"- **status**: `{status}`\n"
+    )

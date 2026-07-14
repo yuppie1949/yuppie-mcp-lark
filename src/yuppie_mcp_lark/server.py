@@ -24,7 +24,7 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
-from .tools.drive import CopyFileInput, DeleteFileInput
+from .tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -181,6 +181,23 @@ async def tool_delete_file(
     return await drive.delete_file(
         DeleteFileInput(file_token=file_token, file_type=file_type)
     )
+
+
+@mcp.tool(
+    name="drive_check_task",
+    annotations=ToolAnnotations(
+        title="查询异步任务状态",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_check_task(
+    task_id: Annotated[str, Field(description="异步任务 ID", min_length=1)],
+) -> str:
+    """查询异步任务状态（删除/移动文件夹）。"""
+    return await drive.check_task(CheckTaskInput(task_id=task_id))
 
 
 @mcp.tool(
