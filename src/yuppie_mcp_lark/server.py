@@ -24,7 +24,7 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
-from .tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput
+from .tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, UploadFileInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -198,6 +198,31 @@ async def tool_check_task(
 ) -> str:
     """查询异步任务状态（删除/移动文件夹）。"""
     return await drive.check_task(CheckTaskInput(task_id=task_id))
+
+
+@mcp.tool(
+    name="drive_upload_file",
+    annotations=ToolAnnotations(
+        title="上传文件到云空间",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_upload_file(
+    file_path: Annotated[str, Field(description="本地文件路径", min_length=1)],
+    parent_node: Annotated[str, Field(description="目标文件夹 token", min_length=1)],
+    file_name: Annotated[str | None, Field(description="文件名，不传则从 file_path 提取")] = None,
+    checksum: Annotated[str | None, Field(description="文件的 Adler-32 校验和")] = None,
+) -> str:
+    """上传文件到云空间指定文件夹（最大 20 MB）。"""
+    return await drive.upload_file(
+        UploadFileInput(
+            file_path=file_path, parent_node=parent_node,
+            file_name=file_name, checksum=checksum,
+        )
+    )
 
 
 @mcp.tool(

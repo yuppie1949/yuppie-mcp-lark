@@ -18,7 +18,7 @@ from yuppie_mcp_lark.tools.bitable import (
     UpdateRecordInput,
 )
 from yuppie_mcp_lark.tools.bitable_quick import BitableClearInput
-from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput
+from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, UploadFileInput
 from yuppie_mcp_lark.tools.messages import SendMessageInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
@@ -109,6 +109,20 @@ def test_check_task_required() -> None:
 def test_check_task_with_id() -> None:
     args = CheckTaskInput(task_id="7360595374803812356")
     assert args.task_id == "7360595374803812356"
+
+
+def test_upload_file_required() -> None:
+    with pytest.raises(ValidationError):
+        UploadFileInput()
+
+
+def test_upload_file_with_all() -> None:
+    args = UploadFileInput(
+        file_path="/tmp/test.pdf", parent_node="fldxxx",
+        file_name="report.pdf", checksum="3248270248",
+    )
+    assert args.file_path == "/tmp/test.pdf"
+    assert args.file_name == "report.pdf"
 
 # ── 多维表格域 ──
 

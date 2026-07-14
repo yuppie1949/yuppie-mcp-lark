@@ -72,3 +72,46 @@ class DriveMixin:
             "/open-apis/drive/v1/files/task_check",
             params={"task_id": task_id},
         )
+
+    async def upload_file(
+        self: _LarkMixinProtocol,
+        file_path: str,
+        parent_node: str,
+        *,
+        file_name: str | None = None,
+        checksum: str | None = None,
+    ) -> dict[str, Any]:
+        """上传文件到云空间指定文件夹（最大 20 MB）
+
+        使用限制
+            文件大小不得超过 20 MB，且不可上传空文件。
+            该接口调用频率上限为 5 QPS，10000 次/天。否则会返回 1061045 错误码，可通过稍后重试解决。
+
+        文档: https://open.feishu.cn/document/server-docs/docs/drive-v1/file/upload_all
+        """
+        import os
+
+        resolved = os.path.abspath(file_path)
+        file_size = os.path.getsize(resolved)
+        if file_size > 20 * 1024 * 1024:
+            raise Exception(f"文件超过 20 MB 限制（{file_size} bytes），请使用分片上传")
+        if file_size == 0:
+            raise Exception("文件为空，不允许上传")
+        name = file_name or os.path.basename(resolved)
+        form_data: dict[str, Any] = {
+            "file_name": name,
+            "parent_type": "explorer",
+            "parent_node": parent_node,
+            "size": str(file_size),
+        }
+        if checksum:
+            form_data["checksum"] = checksum
+
+        with open(resolved, "rb") as f:
+            files = {"file": (name, f, "application/octet-stream")}
+            return await self._upload(
+                "POST",
+                "/open-apis/drive/v1/files/upload_all",
+                data=form_data,
+                files=files,
+            )

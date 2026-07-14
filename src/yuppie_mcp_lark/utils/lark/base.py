@@ -13,6 +13,19 @@ import httpx
 class _LarkMixinProtocol(Protocol):
     """Mixin 自引用协议——避免 mypy 对 mixin self: _LarkBase 模式的报错"""
 
+    @property
+    def base_url(self) -> str: ...
+    async def _ensure_token(self) -> str: ...
+    def _get_http(self) -> httpx.AsyncClient: ...
+    async def _upload(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = ...,
+        data: dict[str, Any] | None = ...,
+        files: dict[str, tuple[str, Any, str]] | None = ...,
+    ) -> dict[str, Any]: ...
     async def _request(
         self,
         method: str,
@@ -266,6 +279,42 @@ class _LarkBase:
             self._tenant_token = data["tenant_access_token"]
             self._token_expire_at = time.time() + data.get("expire", 7200)
             return self._tenant_token
+
+    async def _upload(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        files: dict[str, tuple[str, Any, str]] | None = None,
+    ) -> dict[str, Any]:
+        """通用飞书 API 请求（multipart/form-data），不含自动重试"""
+        token = await self._ensure_token()
+        url = f"{self.base_url}{path}"
+        resp = await self._get_http().request(
+            method,
+            url,
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+            data=data,
+            files=files,
+        )
+        try:
+            result = resp.json()
+        except json.JSONDecodeError as e:
+            body = resp.text[:500]
+            raise Exception(
+                f"[{method} {path}] 响应非 JSON（HTTP {resp.status_code}）: {e}。"
+                f" 原始响应: {body}"
+            )
+        code = result.get("code", -1)
+        if code != 0:
+            hint = _FEISHU_ERRORS.get(code, "")
+            msg = result.get("msg", "")
+            detail = f"。{hint}" if hint else ""
+            raise Exception(f"[{method} {path}] 失败(code={code}): {msg}{detail}")
+        return result.get("data", {})  # type: ignore[no-any-return]
 
     async def _request(
         self,

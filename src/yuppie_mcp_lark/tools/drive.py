@@ -97,3 +97,30 @@ async def check_task(args: CheckTaskInput) -> str:
         f"- **task_id**: `{args.task_id}`\n"
         f"- **status**: `{status}`\n"
     )
+
+
+class UploadFileInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    file_path: str = Field(..., min_length=1, description="本地文件路径")
+    parent_node: str = Field(..., min_length=1, description="目标文件夹 token")
+    file_name: str | None = Field(None, description="文件名，不传则从 file_path 提取")
+    checksum: str | None = Field(None, description="文件的 Adler-32 校验和")
+
+
+async def upload_file(args: UploadFileInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        result = await client.upload_file(
+            args.file_path, args.parent_node,
+            file_name=args.file_name, checksum=args.checksum,
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 上传文件失败：{e}"
+    return (
+        f"✅ 文件已上传\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
+        f"- **file_token**: `{result.get('file_token', '')}`\n"
+    )
