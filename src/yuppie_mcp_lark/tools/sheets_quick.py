@@ -304,11 +304,11 @@ async def quick_sheets_sync_from_file(args: SyncFromFileInput) -> str:
         return f"❌ 从文件同步失败：{e}"
 
 
-async def quick_sheets_clear_sheet_content(args: ClearSheetContentInput) -> str:
+async def quick_sheets_clear_content(args: ClearSheetContentInput) -> str:
     try:
         _t0 = time.time()
         client = _get_client()
-        info = await client.quick_sheets_clear_sheet_content(
+        info = await client.quick_sheets_clear_content(
             args.spreadsheet_token,
             args.sheet_id,
             keep_header=args.keep_header,

@@ -904,7 +904,7 @@ async def tool_quick_sheets_sync_from_file(
         openWorldHint=True,
     ),
 )
-async def tool_quick_sheets_clear_sheet_content(
+async def tool_quick_sheets_clear_content(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     keep_header: Annotated[bool, Field(description="是否保留首行表头，默认 true")] = True,
@@ -912,7 +912,7 @@ async def tool_quick_sheets_clear_sheet_content(
     before_column: Annotated[str | None, Field(description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列')] = None,
 ) -> str:
     """清空工作表数据内容（不移除行）。指定 before_column 则只清空该列之前的所有列。"""
-    return await sheets_quick.quick_sheets_clear_sheet_content(
+    return await sheets_quick.quick_sheets_clear_content(
         ClearSheetContentInput(
             spreadsheet_token=spreadsheet_token,
             sheet_id=sheet_id,

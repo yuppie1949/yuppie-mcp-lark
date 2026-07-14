@@ -268,7 +268,7 @@ class QuickSheetsMixin:
                 end_index=end,
             )
 
-    async def quick_sheets_clear_sheet_content(
+    async def quick_sheets_clear_content(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
         sheet_id: str,
