@@ -43,6 +43,25 @@ class _LarkMixinProtocol(Protocol):
         uuid: str | None = ...,
     ) -> dict[str, Any]: ...
 
+    # ── BitableMixin ──
+    async def search_records(
+        self,
+        app_token: str,
+        table_id: str,
+        *,
+        view_id: str | None = ...,
+        field_names: list[str] | None = ...,
+        sort: dict[str, Any] | None = ...,
+        filter: dict[str, Any] | None = ...,
+        page_token: str | None = ...,
+        page_size: int | None = ...,
+        automatic_fields: bool | None = ...,
+        user_id_type: str | None = ...,
+    ) -> dict[str, Any]: ...
+    async def batch_delete_records(
+        self, app_token: str, table_id: str, record_ids: list[str]
+    ) -> dict[str, Any]: ...
+
     # ── SheetsMixin ──
     async def get_metainfo(self, spreadsheet_token: str) -> dict[str, Any]: ...
     async def read_range(self, spreadsheet_token: str, range_str: str) -> list[list[Any]]: ...

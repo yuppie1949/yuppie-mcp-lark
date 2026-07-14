@@ -4,12 +4,12 @@
 
 ## 特性
 
-- 消息：发送单聊/群聊消息
-- 多维表格：搜索记录（支持分页、排序、过滤）
-- 电子表格：元信息查询、工作表增删复制、范围读写、追加数据、删除行列
-- 快捷操作：列过滤、批次索引、批量更新、批量追加、按批次读取
-- 鉴权：基于飞书应用 `tenant_access_token`，自动刷新
-- 部署：仅 stdio，本地 AI 助手友好
+- **消息**：发送单聊/群聊消息（文本、富文本、卡片、图片等）
+- **多维表格**：记录增删改查、批量操作、应用/数据表管理
+- **电子表格**：元信息查询、工作表增删复制、范围读写、追加数据、删除行列
+- **快捷操作**：列过滤、批次索引、批量更新/追加、按批次读取、从 CSV 同步、清空多维表格
+- **鉴权**：基于飞书应用 `tenant_access_token`，自动刷新
+- **部署**：仅 stdio，本地 AI 助手友好
 
 ## 快速开始
 
@@ -49,44 +49,64 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 17 个）
+## 可用工具（共 29 个）
 
 ### 消息
 
 | 工具 | 说明 |
 |------|------|
-| `lark_send_message` | 发送消息（支持 text/post/image/interactive 等） |
+| `message_send` | 发送消息（支持 text/post/image/interactive 等） |
 
 ### 多维表格
 
 | 工具 | 说明 |
 |------|------|
-| `lark_search_records` | 搜索记录（支持分页、排序、过滤） |
+| `bitable_search_records` | 搜索记录（支持分页、排序、过滤） |
+| `bitable_create_record` | 创建记录 |
+| `bitable_update_record` | 更新记录 |
+| `bitable_delete_record` | 删除记录 |
+| `bitable_batch_create_records` | 批量创建记录（最多 500 条） |
+| `bitable_batch_update_records` | 批量更新记录（最多 500 条） |
+| `bitable_batch_get_records` | 批量获取记录（最多 100 条） |
+| `bitable_batch_delete_records` | 批量删除记录（最多 500 条） |
+| `bitable_create_app` | 创建多维表格应用 |
+| `bitable_copy_app` | 复制多维表格应用 |
+| `bitable_create_table` | 新建数据表 |
+| `bitable_delete_table` | 删除数据表 |
+
+### 多维表格快捷操作
+
+| 工具 | 说明 |
+|------|------|
+| `quick_bitable_clear` | 清空多维表格数据（分页批量删除，支持筛选） |
 
 ### 电子表格通用
 
 | 工具 | 说明 |
 |------|------|
-| `lark_get_spreadsheet_metainfo` | 获取电子表格元信息 |
-| `lark_add_sheet` | 添加工作表 |
-| `lark_delete_sheet` | 删除工作表 |
-| `lark_copy_sheet` | 复制工作表 |
-| `lark_read_range` | 读取范围数据 |
-| `lark_write_range` | 写入范围数据 |
-| `lark_append_data` | 追加数据 |
-| `lark_delete_dimension` | 删除行列 |
+| `sheets_get_metainfo` | 获取电子表格元信息 |
+| `sheets_add_sheet` | 添加工作表 |
+| `sheets_delete_sheet` | 删除工作表 |
+| `sheets_copy_sheet` | 复制工作表 |
+| `sheets_read_range` | 读取范围数据 |
+| `sheets_write_range` | 写入范围数据 |
+| `sheets_append_data` | 追加数据 |
+| `sheets_delete_dimension` | 删除行列 |
 
 ### 电子表格快捷操作
 
 | 工具 | 说明 |
 |------|------|
-| `lark_quick_filter_sheet_columns` | 只保留指定列，删除其余列 |
-| `lark_quick_set_batch_index` | 按列设置批次索引 |
-| `lark_quick_set_header_list` | 写入新表头 |
-| `lark_quick_get_column_last_value` | 获取列最后一个非空值 |
-| `lark_quick_get_rows_by_batch` | 按批次读取行 |
-| `lark_quick_batch_update` | 批量更新行 |
-| `lark_quick_batch_append` | 批量追加行 |
+| `quick_sheets_filter_columns` | 只保留指定列，删除其余列 |
+| `quick_sheets_set_batch_index` | 按列设置批次索引 |
+| `quick_sheets_set_header_list` | 写入新表头 |
+| `quick_sheets_get_column_last_value` | 获取列最后一个非空值 |
+| `quick_sheets_get_rows_by_batch` | 按批次读取行 |
+| `quick_sheets_batch_update` | 批量更新行 |
+| `quick_sheets_batch_append` | 批量追加行 |
+| `quick_sheets_sync_from_file` | 从 CSV 文件同步数据 |
+| `quick_sheets_clear_content` | 清空工作表内容（不移除行） |
+| `quick_sheets_clear_sheet` | 清空工作表数据（删除行） |
 
 ## 测试与调试
 

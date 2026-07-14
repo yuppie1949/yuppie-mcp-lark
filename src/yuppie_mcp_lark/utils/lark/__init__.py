@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .base import _LarkBase
 from .bitable import BitableMixin
+from .bitable_quick import QuickBitableMixin
 from .messages import MessagesMixin
 from .sheets import SheetsMixin
 from .sheets_quick import QuickSheetsMixin
@@ -15,7 +16,14 @@ from .sheets_quick import QuickSheetsMixin
 __all__ = ["LarkClient"]
 
 
-class LarkClient(_LarkBase, MessagesMixin, BitableMixin, SheetsMixin, QuickSheetsMixin):
+class LarkClient(
+    _LarkBase,
+    MessagesMixin,
+    BitableMixin,
+    QuickBitableMixin,
+    SheetsMixin,
+    QuickSheetsMixin,
+):
     """飞书 OpenAPI 客户端"""
 
     pass

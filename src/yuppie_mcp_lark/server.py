@@ -8,8 +8,22 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from . import __version__
-from .tools import bitable, messages, sheets, sheets_quick
-from .tools.bitable import SearchRecordsInput
+from .tools import bitable, bitable_quick, messages, sheets, sheets_quick
+from .tools.bitable import (
+    BatchCreateRecordsInput,
+    BatchDeleteRecordsInput,
+    BatchGetRecordsInput,
+    BatchUpdateRecordsInput,
+    CopyAppInput,
+    CreateAppInput,
+    CreateRecordInput,
+    CreateTableInput,
+    DeleteRecordInput,
+    DeleteTableInput,
+    SearchRecordsInput,
+    UpdateRecordInput,
+)
+from .tools.bitable_quick import BitableClearInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -22,7 +36,6 @@ from .tools.sheets import (
     WriteRangeInput,
 )
 from .tools.sheets_quick import (
-    SyncFromFileInput,
     BatchAppendInput,
     BatchUpdateInput,
     ClearSheetContentInput,
@@ -32,18 +45,23 @@ from .tools.sheets_quick import (
     GetRowsByBatchInput,
     SetBatchIndexInput,
     SetHeaderListInput,
+    SyncFromFileInput,
 )
 
 mcp = FastMCP(
     name="lark_mcp",
     host=os.getenv("MCP_HOST", "127.0.0.1"),
-    instructions="飞书开放平台工具集：发送消息（文本/富文本/卡片/文件等）、操作多维表格（搜索记录/过滤排序）、读写电子表格数据、管理工作表（新增/复制/删除/清空）、批量数据处理（追加/更新/按批次读写/从 CSV 同步）。"
+    instructions=(
+        "飞书开放平台工具集：发送消息（文本/富文本/卡片/文件等）、操作多维表格"
+        "（搜索/创建/更新/删除记录，批量操作，应用和表格管理）、读写电子表格数据、"
+        "管理工作表（新增/复制/删除/清空）、批量数据处理（追加/更新/按批次读写/从 CSV 同步）。"
+    ),
 )
 mcp._mcp_server.version = __version__
 
 
 @mcp.tool(
-    name="lark_send_message",
+    name="message_send",
     annotations=ToolAnnotations(
         title="发送飞书消息",
         readOnlyHint=False,
@@ -111,7 +129,7 @@ async def tool_send_message(
 
 
 @mcp.tool(
-    name="lark_search_records",
+    name="bitable_search_records",
     annotations=ToolAnnotations(
         title="搜索多维表格记录",
         readOnlyHint=True,
@@ -153,7 +171,307 @@ async def tool_search_records(
 
 
 @mcp.tool(
-    name="lark_get_spreadsheet_metainfo",
+    name="bitable_create_record",
+    annotations=ToolAnnotations(
+        title="创建多维表格记录",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_create_record(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    fields: Annotated[dict[str, Any], Field(description='记录字段数据，如 {"字段名": "字段值"}')],
+) -> str:
+    """创建一条多维表格记录。"""
+    return await bitable.create_record(
+        CreateRecordInput(app_token=app_token, table_id=table_id, fields=fields)
+    )
+
+
+@mcp.tool(
+    name="bitable_update_record",
+    annotations=ToolAnnotations(
+        title="更新多维表格记录",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_update_record(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    record_id: Annotated[str, Field(description="记录 ID", min_length=1)],
+    fields: Annotated[dict[str, Any], Field(description="记录字段数据")],
+) -> str:
+    """更新一条多维表格记录。"""
+    return await bitable.update_record(
+        UpdateRecordInput(
+            app_token=app_token, table_id=table_id, record_id=record_id, fields=fields
+        )
+    )
+
+
+@mcp.tool(
+    name="bitable_delete_record",
+    annotations=ToolAnnotations(
+        title="删除多维表格记录",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_delete_record(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    record_id: Annotated[str, Field(description="记录 ID", min_length=1)],
+) -> str:
+    """删除一条多维表格记录。"""
+    return await bitable.delete_record(
+        DeleteRecordInput(app_token=app_token, table_id=table_id, record_id=record_id)
+    )
+
+
+@mcp.tool(
+    name="bitable_batch_create_records",
+    annotations=ToolAnnotations(
+        title="批量创建多维表格记录",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_batch_create_records(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    records: Annotated[
+        list[dict[str, Any]],
+        Field(description="记录列表，每条含 fields 字段，最多 500 条"),
+    ],
+) -> str:
+    """批量创建多维表格记录（最多 500 条）。"""
+    return await bitable.batch_create_records(
+        BatchCreateRecordsInput(app_token=app_token, table_id=table_id, records=records)
+    )
+
+
+@mcp.tool(
+    name="bitable_batch_update_records",
+    annotations=ToolAnnotations(
+        title="批量更新多维表格记录",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_batch_update_records(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    records: Annotated[
+        list[dict[str, Any]],
+        Field(description="记录列表，每条含 record_id 和 fields，最多 500 条"),
+    ],
+) -> str:
+    """批量更新多维表格记录（最多 500 条）。"""
+    return await bitable.batch_update_records(
+        BatchUpdateRecordsInput(app_token=app_token, table_id=table_id, records=records)
+    )
+
+
+@mcp.tool(
+    name="bitable_batch_get_records",
+    annotations=ToolAnnotations(
+        title="批量获取多维表格记录",
+        readOnlyHint=True,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_batch_get_records(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    record_ids: Annotated[
+        list[str],
+        Field(description="记录 ID 列表，最多 100 条", min_length=1),
+    ],
+    user_id_type: Annotated[
+        str | None, Field(description="用户 ID 类型：open_id / user_id / union_id")
+    ] = None,
+    with_shared_url: Annotated[bool | None, Field(description="是否返回分享链接")] = None,
+    automatic_fields: Annotated[bool | None, Field(description="是否返回自动计算字段")] = None,
+) -> str:
+    """批量获取多维表格记录（最多 100 条）。"""
+    return await bitable.batch_get_records(
+        BatchGetRecordsInput(
+            app_token=app_token,
+            table_id=table_id,
+            record_ids=record_ids,
+            user_id_type=user_id_type,
+            with_shared_url=with_shared_url,
+            automatic_fields=automatic_fields,
+        )
+    )
+
+
+@mcp.tool(
+    name="bitable_batch_delete_records",
+    annotations=ToolAnnotations(
+        title="批量删除多维表格记录",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_batch_delete_records(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    record_ids: Annotated[
+        list[str],
+        Field(description="记录 ID 列表，最多 500 条", min_length=1),
+    ],
+) -> str:
+    """批量删除多维表格记录（最多 500 条）。"""
+    return await bitable.batch_delete_records(
+        BatchDeleteRecordsInput(app_token=app_token, table_id=table_id, record_ids=record_ids)
+    )
+
+
+@mcp.tool(
+    name="bitable_create_app",
+    annotations=ToolAnnotations(
+        title="创建多维表格",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_create_app(
+    name: Annotated[str, Field(description="多维表格名称", min_length=1)],
+    folder_token: Annotated[str | None, Field(description="文件夹 token")] = None,
+    time_zone: Annotated[str | None, Field(description="文档时区")] = None,
+) -> str:
+    """在指定文件夹中创建一个新的多维表格应用。"""
+    return await bitable.create_app(
+        CreateAppInput(name=name, folder_token=folder_token, time_zone=time_zone)
+    )
+
+
+@mcp.tool(
+    name="bitable_copy_app",
+    annotations=ToolAnnotations(
+        title="复制多维表格",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_copy_app(
+    app_token: Annotated[str, Field(description="要复制的多维表格 app_token", min_length=1)],
+    name: Annotated[str | None, Field(description="新表格名称")] = None,
+    folder_token: Annotated[str | None, Field(description="目标文件夹 token")] = None,
+    without_content: Annotated[
+        bool | None, Field(description="是否仅复制结构（不复制内容）")
+    ] = None,
+    time_zone: Annotated[str | None, Field(description="文档时区")] = None,
+) -> str:
+    """复制多维表格，可以指定名称、目标文件夹等。"""
+    return await bitable.copy_app(
+        CopyAppInput(
+            app_token=app_token,
+            name=name,
+            folder_token=folder_token,
+            without_content=without_content,
+            time_zone=time_zone,
+        )
+    )
+
+
+@mcp.tool(
+    name="bitable_create_table",
+    annotations=ToolAnnotations(
+        title="创建多维表格数据表",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_create_table(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table: Annotated[
+        dict[str, Any],
+        Field(description="数据表定义，含 name（必填）、default_view_name、fields 等"),
+    ],
+) -> str:
+    """在指定多维表格中创建新的数据表。"""
+    return await bitable.create_table(
+        CreateTableInput(app_token=app_token, table=table)
+    )
+
+
+@mcp.tool(
+    name="bitable_delete_table",
+    annotations=ToolAnnotations(
+        title="删除多维表格数据表",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_delete_table(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="要删除的数据表 ID", min_length=1)],
+) -> str:
+    """删除多维表格中的指定数据表（至少保留一张表）。"""
+    return await bitable.delete_table(
+        DeleteTableInput(app_token=app_token, table_id=table_id)
+    )
+
+
+@mcp.tool(
+    name="quick_bitable_clear",
+    annotations=ToolAnnotations(
+        title="清空多维表格数据",
+        readOnlyHint=False,
+        destructiveHint=True,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_bitable_clear(
+    app_token: Annotated[str, Field(description="多维表格 app_token", min_length=1)],
+    table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
+    filter: Annotated[
+        dict[str, Any] | None, Field(description="筛选条件，只删除符合条件的数据")
+    ] = None,
+    sort: Annotated[
+        list[dict[str, Any]] | None, Field(description="排序条件")
+    ] = None,
+) -> str:
+    """分页获取所有记录并批量删除，支持筛选条件。"""
+    return await bitable_quick.quick_bitable_clear(
+        BitableClearInput(
+            app_token=app_token,
+            table_id=table_id,
+            filter=filter,
+            sort=sort,
+        )
+    )
+
+
+@mcp.tool(
+    name="sheets_get_metainfo",
     annotations=ToolAnnotations(
         title="获取电子表格元信息",
         readOnlyHint=True,
@@ -170,7 +488,7 @@ async def tool_get_metainfo(
 
 
 @mcp.tool(
-    name="lark_add_sheet",
+    name="sheets_add_sheet",
     annotations=ToolAnnotations(
         title="添加工作表",
         readOnlyHint=False,
@@ -188,7 +506,7 @@ async def tool_add_sheet(
 
 
 @mcp.tool(
-    name="lark_delete_sheet",
+    name="sheets_delete_sheet",
     annotations=ToolAnnotations(
         title="删除工作表",
         readOnlyHint=False,
@@ -208,7 +526,7 @@ async def tool_delete_sheet(
 
 
 @mcp.tool(
-    name="lark_copy_sheet",
+    name="sheets_copy_sheet",
     annotations=ToolAnnotations(
         title="复制工作表",
         readOnlyHint=False,
@@ -232,7 +550,7 @@ async def tool_copy_sheet(
     )
 
 @mcp.tool(
-    name="lark_read_range",
+    name="sheets_read_range",
     annotations=ToolAnnotations(
         title="读取电子表格范围",
         readOnlyHint=True,
@@ -252,7 +570,7 @@ async def tool_read_range(
 
 
 @mcp.tool(
-    name="lark_write_range",
+    name="sheets_write_range",
     annotations=ToolAnnotations(
         title="写入电子表格范围",
         readOnlyHint=False,
@@ -277,7 +595,7 @@ async def tool_write_range(
 
 
 @mcp.tool(
-    name="lark_append_data",
+    name="sheets_append_data",
     annotations=ToolAnnotations(
         title="追加电子表格数据",
         readOnlyHint=False,
@@ -303,7 +621,7 @@ async def tool_append_data(
     )
 
 @mcp.tool(
-    name="lark_delete_dimension",
+    name="sheets_delete_dimension",
     annotations=ToolAnnotations(
         title="删除电子表格行列",
         readOnlyHint=False,
@@ -332,7 +650,7 @@ async def tool_delete_dimension(
 
 
 @mcp.tool(
-    name="lark_quick_filter_sheet_columns",
+    name="quick_sheets_filter_columns",
     annotations=ToolAnnotations(
         title="过滤工作表列",
         readOnlyHint=False,
@@ -360,7 +678,7 @@ async def tool_quick_sheets_filter_columns(
     )
 
 @mcp.tool(
-    name="lark_quick_set_batch_index",
+    name="quick_sheets_set_batch_index",
     annotations=ToolAnnotations(
         title="设置批次索引",
         readOnlyHint=False,
@@ -391,7 +709,7 @@ async def tool_quick_sheets_set_batch_index(
 
 
 @mcp.tool(
-    name="lark_quick_set_header_list",
+    name="quick_sheets_set_header_list",
     annotations=ToolAnnotations(
         title="写入新表头",
         readOnlyHint=False,
@@ -422,7 +740,7 @@ async def tool_quick_sheets_set_header_list(
 
 
 @mcp.tool(
-    name="lark_quick_get_column_last_value",
+    name="quick_sheets_get_column_last_value",
     annotations=ToolAnnotations(
         title="获取列最后一个数值",
         readOnlyHint=True,
@@ -449,7 +767,7 @@ async def tool_quick_sheets_get_column_last_value(
 
 
 @mcp.tool(
-    name="lark_quick_get_rows_by_batch",
+    name="quick_sheets_get_rows_by_batch",
     annotations=ToolAnnotations(
         title="按批次读取行",
         readOnlyHint=True,
@@ -478,7 +796,7 @@ async def tool_quick_sheets_get_rows_by_batch(
 
 
 @mcp.tool(
-    name="lark_quick_batch_update",
+    name="quick_sheets_batch_update",
     annotations=ToolAnnotations(
         title="批量更新行数据",
         readOnlyHint=False,
@@ -513,7 +831,7 @@ async def tool_quick_sheets_batch_update(
 
 
 @mcp.tool(
-    name="lark_quick_batch_append",
+    name="quick_sheets_batch_append",
     annotations=ToolAnnotations(
         title="批量追加行数据",
         readOnlyHint=False,
@@ -548,7 +866,7 @@ async def tool_quick_sheets_batch_append(
 
 
 @mcp.tool(
-    name="lark_quick_sync_from_file",
+    name="quick_sheets_sync_from_file",
     annotations=ToolAnnotations(
         title="从 CSV 文件同步数据到工作表",
         readOnlyHint=False,
@@ -577,7 +895,7 @@ async def tool_quick_sheets_sync_from_file(
 
 
 @mcp.tool(
-    name="lark_quick_clear_sheet_content",
+    name="quick_sheets_clear_content",
     annotations=ToolAnnotations(
         title="清空工作表内容（不移除行）",
         readOnlyHint=False,
@@ -606,7 +924,7 @@ async def tool_quick_sheets_clear_sheet_content(
 
 
 @mcp.tool(
-    name="lark_quick_clear_sheet",
+    name="quick_sheets_clear_sheet",
     annotations=ToolAnnotations(
         title="清空工作表数据（删除行）",
         readOnlyHint=False,
