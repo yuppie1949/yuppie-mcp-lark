@@ -28,6 +28,7 @@ from yuppie_mcp_lark.tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     ReadRangesInput,
+    WriteImageInput,
     WriteRangeInput,
 )
 
@@ -239,6 +240,22 @@ def test_write_range_required() -> None:
         WriteRangeInput()
 
 
+def test_write_image_required() -> None:
+    with pytest.raises(ValidationError):
+        WriteImageInput()
+
+
+def test_write_image_with_all() -> None:
+    args = WriteImageInput(
+        spreadsheet_token="x",
+        range="sheet1!A1:A1",
+        image_base64="iVBORw0KGgo=",
+        name="test.png",
+    )
+    assert args.range == "sheet1!A1:A1"
+    assert args.name == "test.png"
+
+
 def test_read_ranges_required() -> None:
     with pytest.raises(ValidationError):
         ReadRangesInput()
@@ -283,7 +300,7 @@ def test_delete_dimension_defaults_and_required() -> None:
 
 # ── 电子表格快捷操作域 ──
 
-from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput
+from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput, QuickWriteImageInput
 
 
 def test_clear_sheet_content_required() -> None:
@@ -299,6 +316,37 @@ def test_clear_sheet_content_defaults() -> None:
 
 
 def test_clear_sheet_content_with_before_column() -> None:
+    args = ClearSheetContentInput(
+        spreadsheet_token="x",
+        sheet_id="y",
+        before_column="F",
+    )
+    assert args.before_column == "F"
+
+
+def test_quick_write_image_required() -> None:
+    with pytest.raises(ValidationError):
+        QuickWriteImageInput()
+
+
+def test_quick_write_image_with_all() -> None:
+    args = QuickWriteImageInput(
+        spreadsheet_token="x",
+        range="sheet1!A1:A1",
+        image_source="https://example.com/img.png",
+        name="test.png",
+    )
+    assert args.image_source == "https://example.com/img.png"
+    assert args.name == "test.png"
+
+
+def test_quick_write_image_name_auto() -> None:
+    args = QuickWriteImageInput(
+        spreadsheet_token="x",
+        range="sheet1!A1:A1",
+        image_source="/path/to/photo.jpg",
+    )
+    assert args.name is None
     args = ClearSheetContentInput(
         spreadsheet_token="x",
         sheet_id="y",

@@ -404,3 +404,45 @@ class QuickSheetsMixin:
                 await self.append_data(spreadsheet_token, sheet_id, chunk, data_start=data_start)
                 if i + batch_size < len(values) and batch_interval > 0:
                     await asyncio.sleep(batch_interval)
+
+    async def quick_sheets_write_image(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        range: str,
+        image_source: str,
+        name: str | None = None,
+    ) -> dict[str, Any]:
+        """向单元格写入图片。自动识别 image_source 类型：
+        - http(s):// → 从网络下载
+        - 本地文件路径 → 读取文件
+        - 其他 → 视为 base64 字符串直接传递
+
+        name 不传时自动从 image_source 提取文件名。
+        """
+        import base64
+        from urllib.parse import unquote, urlparse
+
+        src = image_source.strip()
+
+        if src.startswith(("http://", "https://")):
+            import httpx
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(src)
+                resp.raise_for_status()
+            image_base64 = base64.b64encode(resp.content).decode("utf-8")
+        elif os.path.isfile(unquote(src)):
+            path = unquote(src)
+            with open(path, "rb") as f:
+                image_base64 = base64.b64encode(f.read()).decode("utf-8")
+        else:
+            image_base64 = src
+
+        if name is None:
+            if src.startswith(("http://", "https://")):
+                name = unquote(urlparse(src).path.split("/")[-1]) or "image.png"
+            elif os.path.isfile(unquote(src)):
+                name = os.path.basename(unquote(src))
+            else:
+                name = "image.png"
+
+        return await self.write_image(spreadsheet_token, range, image_base64, name)

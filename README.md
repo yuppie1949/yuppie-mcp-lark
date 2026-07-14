@@ -49,7 +49,7 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 30 个）
+## 可用工具（共 35 个）
 
 ### 消息
 
@@ -91,6 +91,7 @@
 | `sheets_read_range` | 读取单范围数据 |
 | `sheets_read_ranges` | 读取多范围数据 |
 | `sheets_write_range` | 写入范围数据 |
+| `sheets_write_image` | 向单元格写入图片 |
 | `sheets_append_data` | 追加数据 |
 | `sheets_delete_dimension` | 删除行列 |
 
@@ -108,6 +109,7 @@
 | `quick_sheets_sync_from_file` | 从 CSV 文件同步数据 |
 | `quick_sheets_clear_content` | 清空工作表内容（不移除行） |
 | `quick_sheets_clear_sheet` | 清空工作表数据（删除行） |
+| `quick_sheets_write_image` | 向单元格写入图片（网络/本地/base64） |
 
 ## 测试与调试
 

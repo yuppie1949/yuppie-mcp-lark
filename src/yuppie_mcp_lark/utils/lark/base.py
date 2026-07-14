@@ -65,6 +65,9 @@ class _LarkMixinProtocol(Protocol):
     # ── SheetsMixin ──
     async def get_metainfo(self, spreadsheet_token: str) -> dict[str, Any]: ...
     async def read_range(self, spreadsheet_token: str, range_str: str) -> dict[str, Any]: ...
+    async def write_image(
+        self, spreadsheet_token: str, range: str, image_base64: str, name: str
+    ) -> dict[str, Any]: ...
     async def read_ranges(
         self,
         spreadsheet_token: str,
@@ -156,6 +159,9 @@ class _LarkMixinProtocol(Protocol):
         batch_interval: int = ...,
         data_start: int = ...,
     ) -> None: ...
+    async def quick_sheets_write_image(
+        self, spreadsheet_token: str, range: str, image_source: str, name: str | None = ...
+    ) -> dict[str, Any]: ...
 
 
 _FEISHU_ERRORS: dict[int, str] = {

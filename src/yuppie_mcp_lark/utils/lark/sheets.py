@@ -296,3 +296,19 @@ class SheetsMixin:
             if h == column_name:
                 return self._index_to_letter(i)
         raise Exception(f"在表头中未找到列 '{column_name}'")
+
+    async def write_image(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        range: str,
+        image_base64: str,
+        name: str,
+    ) -> dict[str, Any]:
+        """向单元格写入图片
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/data-operation/writing-images
+        """
+        return await self._post(
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/values_image",
+            json_data={"range": range, "image": image_base64, "name": name},
+        )

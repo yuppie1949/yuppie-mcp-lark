@@ -34,6 +34,7 @@ from .tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     ReadRangesInput,
+    WriteImageInput,
     WriteRangeInput,
 )
 from .tools.sheets_quick import (
@@ -44,6 +45,7 @@ from .tools.sheets_quick import (
     FilterSheetColumnsInput,
     GetColumnLastValueInput,
     GetRowsByBatchInput,
+    QuickWriteImageInput,
     SetBatchIndexInput,
     SetHeaderListInput,
     SyncFromFileInput,
@@ -606,6 +608,33 @@ async def tool_read_ranges(
 
 
 @mcp.tool(
+    name="sheets_write_image",
+    annotations=ToolAnnotations(
+        title="写入电子表格图片",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_write_image(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    range: Annotated[str, Field(description='单元格范围，如 "sheetId!A1:A1"', min_length=1)],
+    image_base64: Annotated[str, Field(description="图片 base64 编码内容", min_length=1)],
+    name: Annotated[str, Field(description='图片文件名，含后缀，如 "test.png"', min_length=1)],
+) -> str:
+    """向指定单元格写入图片，支持 PNG/JPEG/GIF/BMP 等格式。"""
+    return await sheets.write_image(
+        WriteImageInput(
+            spreadsheet_token=spreadsheet_token,
+            range=range,
+            image_base64=image_base64,
+            name=name,
+        )
+    )
+
+
+@mcp.tool(
     name="sheets_write_range",
     annotations=ToolAnnotations(
         title="写入电子表格范围",
@@ -982,6 +1011,41 @@ async def tool_quick_sheets_clear_sheet(
             sheet_id=sheet_id,
             keep_header=keep_header,
             data_start=data_start,
+        )
+    )
+
+
+@mcp.tool(
+    name="quick_sheets_write_image",
+    annotations=ToolAnnotations(
+        title="快捷写入电子表格图片",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_sheets_write_image(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    range: Annotated[str, Field(description='单元格范围，如 "sheetId!A1:A1"', min_length=1)],
+    image_source: Annotated[
+        str,
+        Field(
+            description="图片来源：网络 URL（http/https）、本地文件路径、或 base64 字符串",
+            min_length=1,
+        ),
+    ],
+    name: Annotated[
+        str | None, Field(description='图片文件名（含后缀），不传则自动从 image_source 提取')
+    ] = None,
+) -> str:
+    """向单元格写入图片，支持网络图片、本地文件、base64 三种来源。"""
+    return await sheets_quick.quick_sheets_write_image(
+        QuickWriteImageInput(
+            spreadsheet_token=spreadsheet_token,
+            range=range,
+            image_source=image_source,
+            name=name,
         )
     )
 

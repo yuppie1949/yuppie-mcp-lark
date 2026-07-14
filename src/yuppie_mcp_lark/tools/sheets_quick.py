@@ -341,3 +341,32 @@ async def quick_sheets_clear_sheet(args: ClearSheetInput) -> str:
         return f"✅ 工作表已清空\n\n- **耗时**: `{_elapsed:.1f}s`"
     except Exception as e:
         return f"❌ 清空工作表失败：{e}"
+
+
+class QuickWriteImageInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    range: str = Field(..., min_length=1, description='单元格范围，如 "sheetId!A1:A1"')
+    image_source: str = Field(
+        ..., min_length=1,
+        description="图片来源：网络 URL（http/https）、本地文件路径、或 base64 字符串",
+    )
+    name: str | None = Field(None, description='图片文件名（含后缀），不传则从 image_source 自动提取')
+
+
+async def quick_sheets_write_image(args: QuickWriteImageInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        result = await client.quick_sheets_write_image(
+            args.spreadsheet_token, args.range, args.image_source, args.name
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 写入图片失败：{e}"
+    return (
+        f"✅ 图片已写入\n\n"
+        f"- **range**: `{result.get('updateRange', '')}`\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+    )

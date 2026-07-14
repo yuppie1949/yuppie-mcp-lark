@@ -285,3 +285,30 @@ async def delete_dimension(args: DeleteDimensionInput) -> str:
         )
     except Exception as e:
         return f"❌ 删除失败：{e}"
+
+
+class WriteImageInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    range: str = Field(..., min_length=1, description='单元格范围，如 "sheetId!A1:A1"')
+    image_base64: str = Field(..., min_length=1, description="图片 base64 编码内容")
+    name: str = Field(..., min_length=1, description='图片文件名，含后缀，如 "test.png"')
+
+
+async def write_image(args: WriteImageInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        result = await client.write_image(
+            args.spreadsheet_token, args.range, args.image_base64, args.name
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 写入图片失败：{e}"
+    return (
+        f"✅ 图片已写入\n\n"
+        f"- **range**: `{result.get('updateRange', '')}`\n"
+        f"- **name**: `{args.name}`\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+    )
