@@ -133,6 +133,15 @@ class ClearSheetContentInput(BaseModel):
         None, description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列',
     )
 
+class SetRowHeightInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    sheet_id: str = Field(..., min_length=1, description="工作表 ID")
+    height: int = Field(..., ge=1, description="行高（点，1/72 英寸）")
+    start_row: int = Field(2, ge=1, description="起始行号，默认 2（跳过表头）")
+    end_row: int | None = Field(None, description="结束行号，不传则到最后一行")
+
 
 async def quick_sheets_filter_columns(args: FilterSheetColumnsInput) -> str:
     try:
@@ -369,4 +378,26 @@ async def quick_sheets_write_image(args: QuickWriteImageInput) -> str:
         f"✅ 图片已写入\n\n"
         f"- **range**: `{result.get('updateRange', '')}`\n"
         f"- **耗时**: `{_elapsed:.1f}s`"
+    )
+
+async def quick_sheets_set_row_height(args: SetRowHeightInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        result = await client.quick_sheets_set_row_height(
+            args.spreadsheet_token,
+            args.sheet_id,
+            args.height,
+            start_row=args.start_row,
+            end_row=args.end_row,
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 设置行高失败：{e}"
+    return (
+        f"✅ 行高已设置\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+        f"- **行高**: `{args.height}pt`\n"
+        f"- **行数**: `{result['updated_rows']}`\n"
+        f"- **批次数**: `{result['batch_count']}`\n"
     )

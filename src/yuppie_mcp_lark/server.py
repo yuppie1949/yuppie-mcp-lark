@@ -34,6 +34,7 @@ from .tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     ReadRangesInput,
+    UpdateDimensionInput,
     WriteImageInput,
     WriteRangeInput,
 )
@@ -47,6 +48,7 @@ from .tools.sheets_quick import (
     GetRowsByBatchInput,
     QuickWriteImageInput,
     SetBatchIndexInput,
+    SetRowHeightInput,
     SetHeaderListInput,
     SyncFromFileInput,
 )
@@ -715,6 +717,39 @@ async def tool_delete_dimension(
 
 
 @mcp.tool(
+    name="sheets_update_dimension",
+    annotations=ToolAnnotations(
+        title="更新行列属性",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_update_dimension(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    start_index: Annotated[int, Field(description="起始位置（1-based 含）", ge=1)],
+    end_index: Annotated[int, Field(description="结束位置（1-based 含）", ge=1)],
+    major_dimension: Annotated[str, Field(description="维度：ROWS（行）或 COLUMNS（列）")] = "ROWS",
+    fixed_size: Annotated[int | None, Field(description="行高或列宽（像素）")] = None,
+    visible: Annotated[bool | None, Field(description="是否显示行或列")] = None,
+) -> str:
+    """更新行列属性（行高/列宽/显示隐藏），单次最多 5000 行/列。"""
+    return await sheets.update_dimension(
+        UpdateDimensionInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            major_dimension=major_dimension,
+            start_index=start_index,
+            end_index=end_index,
+            fixed_size=fixed_size,
+            visible=visible,
+        )
+    )
+
+
+@mcp.tool(
     name="quick_sheets_filter_columns",
     annotations=ToolAnnotations(
         title="过滤工作表列",
@@ -984,6 +1019,35 @@ async def tool_quick_sheets_clear_content(
             keep_header=keep_header,
             data_start=data_start,
             before_column=before_column,
+        )
+    )
+
+
+@mcp.tool(
+    name="quick_sheets_set_row_height",
+    annotations=ToolAnnotations(
+        title="设置工作表的行高",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=True,
+        openWorldHint=True,
+    ),
+)
+async def tool_quick_sheets_set_row_height(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    height: Annotated[int, Field(description="行高（点，1/72 英寸）", ge=1)],
+    start_row: Annotated[int, Field(description="起始行号，默认 2（跳过表头）", ge=1)] = 2,
+    end_row: Annotated[int | None, Field(description="结束行号，不传则到最后一行")] = None,
+) -> str:
+    """设置工作表的行高（自动分批，支持指定范围）。"""
+    return await sheets_quick.quick_sheets_set_row_height(
+        SetRowHeightInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            height=height,
+            start_row=start_row,
+            end_row=end_row,
         )
     )
 

@@ -96,6 +96,17 @@ class _LarkMixinProtocol(Protocol):
         start_index: int,
         end_index: int,
     ) -> None: ...
+    async def update_dimension(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        major_dimension: str = ...,
+        start_index: int,
+        end_index: int,
+        fixed_size: int | None = ...,
+        visible: bool | None = ...,
+    ) -> None: ...
     async def find_sheet_ids(self, spreadsheet_token: str, *titles: str) -> dict[str, str]: ...
     async def find_sheet_id(self, spreadsheet_token: str, title: str) -> str: ...
     async def get_sheet_id(self, spreadsheet_token: str, sheet_title: str) -> str: ...
@@ -161,6 +172,15 @@ class _LarkMixinProtocol(Protocol):
     ) -> None: ...
     async def quick_sheets_write_image(
         self, spreadsheet_token: str, range: str, image_source: str, name: str | None = ...
+    ) -> dict[str, Any]: ...
+    async def quick_sheets_set_row_height(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        height: int,
+        *,
+        start_row: int = ...,
+        end_row: int | None = ...,
     ) -> dict[str, Any]: ...
 
 

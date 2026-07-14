@@ -28,6 +28,7 @@ from yuppie_mcp_lark.tools.sheets import (
     GetMetainfoInput,
     ReadRangeInput,
     ReadRangesInput,
+    UpdateDimensionInput,
     WriteImageInput,
     WriteRangeInput,
 )
@@ -281,6 +282,30 @@ def test_read_ranges_with_options() -> None:
     assert args.user_id_type == "open_id"
 
 
+def test_update_dimension_required() -> None:
+    with pytest.raises(ValidationError):
+        UpdateDimensionInput()
+
+
+def test_update_dimension_defaults() -> None:
+    args = UpdateDimensionInput(
+        spreadsheet_token="x", sheet_id="y", start_index=2, end_index=100
+    )
+    assert args.major_dimension == "ROWS"
+    assert args.fixed_size is None
+    assert args.visible is None
+
+
+def test_update_dimension_full() -> None:
+    args = UpdateDimensionInput(
+        spreadsheet_token="x", sheet_id="y", start_index=1, end_index=50,
+        major_dimension="COLUMNS", fixed_size=200, visible=False,
+    )
+    assert args.major_dimension == "COLUMNS"
+    assert args.fixed_size == 200
+    assert args.visible is False
+
+
 def test_append_data_required() -> None:
     with pytest.raises(ValidationError):
         AppendDataInput()
@@ -300,7 +325,7 @@ def test_delete_dimension_defaults_and_required() -> None:
 
 # ── 电子表格快捷操作域 ──
 
-from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput, QuickWriteImageInput
+from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput, QuickWriteImageInput, SetRowHeightInput
 
 
 def test_clear_sheet_content_required() -> None:
@@ -353,3 +378,26 @@ def test_quick_write_image_name_auto() -> None:
         before_column="F",
     )
     assert args.before_column == "F"
+
+
+def test_set_row_height_required() -> None:
+    with pytest.raises(ValidationError):
+        SetRowHeightInput()
+
+
+def test_set_row_height_defaults() -> None:
+    args = SetRowHeightInput(
+        spreadsheet_token="x", sheet_id="y", height=50
+    )
+    assert args.start_row == 2
+    assert args.end_row is None
+
+
+def test_set_row_height_full() -> None:
+    args = SetRowHeightInput(
+        spreadsheet_token="x", sheet_id="y", height=40,
+        start_row=1, end_row=100,
+    )
+    assert args.height == 40
+    assert args.start_row == 1
+    assert args.end_row == 100

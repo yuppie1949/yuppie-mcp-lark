@@ -91,7 +91,17 @@ class DeleteDimensionInput(BaseModel):
     start_index: int = Field(..., ge=1, description="起始索引（1-based 含）")
     end_index: int = Field(..., ge=1, description="结束索引（1-based 含）")
 
+class UpdateDimensionInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    sheet_id: str = Field(..., min_length=1, description="工作表 ID")
+    major_dimension: str = Field("ROWS", description="维度：ROWS（行）或 COLUMNS（列）")
+    start_index: int = Field(..., ge=1, description="起始位置（1-based 含）")
+    end_index: int = Field(..., ge=1, description="结束位置（1-based 含）")
+    fixed_size: int | None = Field(None, description="行高或列宽（像素）")
+    visible: bool | None = Field(None, description="是否显示行或列")
+    
 async def get_metainfo(args: GetMetainfoInput) -> str:
     try:
         _t0 = time.time()
@@ -311,4 +321,31 @@ async def write_image(args: WriteImageInput) -> str:
         f"- **range**: `{result.get('updateRange', '')}`\n"
         f"- **name**: `{args.name}`\n"
         f"- **耗时**: `{_elapsed:.1f}s`"
+    )
+
+
+
+
+
+async def update_dimension(args: UpdateDimensionInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        await client.update_dimension(
+            args.spreadsheet_token,
+            args.sheet_id,
+            major_dimension=args.major_dimension,
+            start_index=args.start_index,
+            end_index=args.end_index,
+            fixed_size=args.fixed_size,
+            visible=args.visible,
+        )
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 更新行列失败：{e}"
+    return (
+        f"✅ 行列属性已更新\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`"
+        f"- **dimension**: `{args.major_dimension}`\n"
+        f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
     )

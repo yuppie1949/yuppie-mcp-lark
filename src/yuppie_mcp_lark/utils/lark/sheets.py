@@ -193,6 +193,43 @@ class SheetsMixin:
             },
         )
 
+    async def update_dimension(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        major_dimension: str = "ROWS",
+        start_index: int,
+        end_index: int,
+        fixed_size: int | None = None,
+        visible: bool | None = None,
+    ) -> None:
+        """更新行列属性（行高/列宽/显示隐藏），1-based 含首尾，单次最多 5000 行/列
+
+        fixed_size 为 0 时等价于隐藏。visible 和 fixed_size 至少传一个。
+
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/sheet-rowcol/update-rows-or-columns
+        """
+        props: dict[str, Any] = {}
+        if fixed_size is not None:
+            props["fixedSize"] = fixed_size
+        if visible is not None:
+            props["visible"] = visible
+
+        await self._request(
+            "PUT",
+            f"/open-apis/sheets/v2/spreadsheets/{spreadsheet_token}/dimension_range",
+            json_data={
+                "dimension": {
+                    "sheetId": sheet_id,
+                    "majorDimension": major_dimension,
+                    "startIndex": start_index,
+                    "endIndex": end_index,
+                },
+                "dimensionProperties": props,
+            },
+        )
+
     # ── 工作表查找 ──
 
     async def find_sheet_ids(

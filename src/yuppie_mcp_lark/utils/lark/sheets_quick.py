@@ -446,3 +446,43 @@ class QuickSheetsMixin:
         return await self.write_image(
             spreadsheet_token, range, image_base64, name or extracted_name,
         )
+
+    async def quick_sheets_set_row_height(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        height: int,
+        *,
+        start_row: int = 2,
+        end_row: int | None = None,
+    ) -> dict[str, Any]:
+        """设置所有数据行的行高（自动分批，单次最多 5000 行）"""
+        _BATCH = 5000
+
+        # 获取工作表总行数
+        meta = await self.get_metainfo(spreadsheet_token)
+        row_count = 0
+        for s in meta.get("sheets", []):
+            if str(s.get("sheetId", "")) == sheet_id:
+                row_count = s.get("rowCount", 0)
+                break
+        data_end = end_row if end_row is not None else row_count
+        if data_end < start_row:
+            return {"updated_rows": 0, "batch_count": 0}
+
+        batch_count = 0
+        current = start_row
+        while current <= data_end:
+            batch_end = min(current + _BATCH - 1, data_end)
+            await self.update_dimension(
+                spreadsheet_token, sheet_id,
+                major_dimension="ROWS", start_index=current, end_index=batch_end,
+                fixed_size=height,
+            )
+            batch_count += 1
+            current = batch_end + 1
+
+        return {
+            "updated_rows": data_end - start_row + 1,
+            "batch_count": batch_count,
+        }
