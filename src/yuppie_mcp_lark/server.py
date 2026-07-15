@@ -24,7 +24,7 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
-from .tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, ListFilesInput, UploadFileInput
+from .tools.drive import CheckTaskInput, CopyFileInput, CreateFolderInput, DeleteFileInput, ListFilesInput, UploadFileInput
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -250,6 +250,26 @@ async def tool_list_files(
             page_token=page_token, order_by=order_by,
             direction=direction, user_id_type=user_id_type,
         )
+    )
+
+
+@mcp.tool(
+    name="drive_create_folder",
+    annotations=ToolAnnotations(
+        title="创建文件夹",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def tool_create_folder(
+    name: Annotated[str, Field(description="文件夹名称", min_length=1)],
+    folder_token: Annotated[str, Field(description="父文件夹 token", min_length=1)],
+) -> str:
+    """在云空间中创建一个空文件夹。"""
+    return await drive.create_folder(
+        CreateFolderInput(name=name, folder_token=folder_token)
     )
 
 

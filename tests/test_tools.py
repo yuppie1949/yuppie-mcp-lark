@@ -18,7 +18,7 @@ from yuppie_mcp_lark.tools.bitable import (
     UpdateRecordInput,
 )
 from yuppie_mcp_lark.tools.bitable_quick import BitableClearInput
-from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, DeleteFileInput, ListFilesInput, UploadFileInput
+from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, CreateFolderInput, DeleteFileInput, ListFilesInput, UploadFileInput
 from yuppie_mcp_lark.tools.messages import SendMessageInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
@@ -139,6 +139,17 @@ def test_list_files_with_folder() -> None:
     assert args.folder_token == "fldxxx"
     assert args.page_size == 50
     assert args.direction == "DESC"
+
+
+def test_create_folder_required() -> None:
+    with pytest.raises(ValidationError):
+        CreateFolderInput()
+
+
+def test_create_folder_with_all() -> None:
+    args = CreateFolderInput(name="new_folder", folder_token="fldxxx")
+    assert args.name == "new_folder"
+    assert args.folder_token == "fldxxx"
 
 # ── 多维表格域 ──
 

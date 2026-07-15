@@ -167,5 +167,27 @@ async def list_files(args: ListFilesInput) -> str:
         lines.append(
             f"| {f.get('name', '')} | {f.get('type', '')} | {f.get('token', '')} |"
         )
-
     return "\n".join(lines)
+
+
+class CreateFolderInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    name: str = Field(..., min_length=1, max_length=256, description="文件夹名称")
+    folder_token: str = Field(..., min_length=1, description="父文件夹 token")
+
+
+async def create_folder(args: CreateFolderInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        data = await client.create_folder(args.name, args.folder_token)
+        _elapsed = time.time() - _t0
+    except Exception as e:
+        return f"❌ 创建文件夹失败：{e}"
+    return (
+        f"✅ 文件夹已创建\n\n"
+        f"- **耗时**: `{_elapsed:.1f}s`\n"
+        f"- **token**: `{data.get('token', '')}`\n"
+        f"- **url**: {data.get('url', '')}\n"
+    )

@@ -71,6 +71,9 @@ class _LarkMixinProtocol(Protocol):
         self, file_token: str, file_type: str
     ) -> dict[str, Any]: ...
     async def check_task(self, task_id: str) -> dict[str, Any]: ...
+    async def create_folder(
+        self, name: str, folder_token: str
+    ) -> dict[str, Any]: ...
     async def list_files(
         self,
         *,

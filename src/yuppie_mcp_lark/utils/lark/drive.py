@@ -145,3 +145,17 @@ class DriveMixin:
             params["user_id_type"] = user_id_type
 
         return await self._get("/open-apis/drive/v1/files", params=params)
+
+    async def create_folder(
+        self: _LarkMixinProtocol,
+        name: str,
+        folder_token: str,
+    ) -> dict[str, Any]:
+        """创建文件夹
+
+        文档: https://open.feishu.cn/document/server-docs/docs/drive-v1/folder/create
+        """
+        return await self._post(
+            "/open-apis/drive/v1/files/create_folder",
+            json_data={"name": name, "folder_token": folder_token},
+        )
