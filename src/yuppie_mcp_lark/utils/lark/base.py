@@ -286,7 +286,14 @@ class _LarkBase:
                 f"{self.base_url}/open-apis/auth/v3/tenant_access_token/internal",
                 json={"app_id": self.app_id, "app_secret": self.app_secret},
             )
-            data = resp.json()
+            try:
+                data = resp.json()
+            except json.JSONDecodeError as e:
+                body = resp.text[:500]
+                raise Exception(
+                    f"获取 tenant_access_token 失败（HTTP {resp.status_code}）: {e}。"
+                    f" 原始响应: {body}"
+                )
             if data.get("code") != 0:
                 raise Exception(f"获取 tenant_access_token 失败: {data.get('msg', '')}")
             self._tenant_token = data["tenant_access_token"]
@@ -302,32 +309,38 @@ class _LarkBase:
         data: dict[str, Any] | None = None,
         files: dict[str, tuple[str, Any, str]] | None = None,
     ) -> dict[str, Any]:
-        """通用飞书 API 请求（multipart/form-data），不含自动重试"""
-        token = await self._ensure_token()
-        url = f"{self.base_url}{path}"
-        resp = await self._get_http().request(
-            method,
-            url,
-            headers={"Authorization": f"Bearer {token}"},
-            params=params,
-            data=data,
-            files=files,
-        )
-        try:
-            result = resp.json()
-        except json.JSONDecodeError as e:
-            body = resp.text[:500]
-            raise Exception(
-                f"[{method} {path}] 响应非 JSON（HTTP {resp.status_code}）: {e}。"
-                f" 原始响应: {body}"
+        """通用飞书 API 请求（multipart/form-data），含 90217 限流自动重试（最多 3 次）"""
+        max_retries = 3
+        for attempt in range(max_retries):
+            token = await self._ensure_token()
+            url = f"{self.base_url}{path}"
+            resp = await self._get_http().request(
+                method,
+                url,
+                headers={"Authorization": f"Bearer {token}"},
+                params=params,
+                data=data,
+                files=files,
             )
-        code = result.get("code", -1)
-        if code != 0:
-            hint = _FEISHU_ERRORS.get(code, "")
-            msg = result.get("msg", "")
-            detail = f"。{hint}" if hint else ""
-            raise Exception(f"[{method} {path}] 失败(code={code}): {msg}{detail}")
-        return result.get("data", {})  # type: ignore[no-any-return]
+            try:
+                result = resp.json()
+            except json.JSONDecodeError as e:
+                body = resp.text[:500]
+                raise Exception(
+                    f"[{method} {path}] 响应非 JSON（HTTP {resp.status_code}）: {e}。"
+                    f" 原始响应: {body}"
+                )
+            code = result.get("code", -1)
+            if code == 90217:
+                await asyncio.sleep(1.5 * (attempt + 1))
+                continue
+            if code != 0:
+                hint = _FEISHU_ERRORS.get(code, "")
+                msg = result.get("msg", "")
+                detail = f"。{hint}" if hint else ""
+                raise Exception(f"[{method} {path}] 失败(code={code}): {msg}{detail}")
+            return result.get("data", {})  # type: ignore[no-any-return]
+        raise Exception(f"[{method} {path}] 重试 {max_retries} 次后仍失败: too many request")
 
     async def _request(
         self,
@@ -338,9 +351,9 @@ class _LarkBase:
         json_data: dict[str, Any] | list[Any] | None = None,
     ) -> dict[str, Any]:
         """通用飞书 API 请求，含 90217 限流自动重试（最多 3 次）"""
-        token = await self._ensure_token()
         max_retries = 3
         for attempt in range(max_retries):
+            token = await self._ensure_token()
             url = f"{self.base_url}{path}"
             resp = await self._get_http().request(
                 method,
