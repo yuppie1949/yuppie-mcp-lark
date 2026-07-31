@@ -55,14 +55,21 @@ class ReadRangeInput(BaseModel):
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
     range_str: str = Field(..., min_length=1, description="范围，如 {sheetId}!A1:C10")
 
+
 class ReadRangesInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
-    ranges: str = Field(..., min_length=1, description='多个范围，逗号分隔，如 "sheetId1!A2:B6,sheetId2!B1:C8"')
-    value_render_option: str | None = Field(None, description='值渲染选项：ToString / Formula / FormattedValue / UnformattedValue')
-    date_time_render_option: str | None = Field(None, description='日期时间渲染选项：FormattedString')
-    user_id_type: str | None = Field(None, description='用户 ID 类型：open_id / union_id')
+    ranges: str = Field(
+        ..., min_length=1, description='多个范围，逗号分隔，如 "sheetId1!A2:B6,sheetId2!B1:C8"'
+    )
+    value_render_option: str | None = Field(
+        None, description="值渲染选项：ToString / Formula / FormattedValue / UnformattedValue"
+    )
+    date_time_render_option: str | None = Field(
+        None, description="日期时间渲染选项：FormattedString"
+    )
+    user_id_type: str | None = Field(None, description="用户 ID 类型：open_id / union_id")
 
 
 class WriteRangeInput(BaseModel):
@@ -91,6 +98,7 @@ class DeleteDimensionInput(BaseModel):
     start_index: int = Field(..., ge=1, description="起始索引（1-based 含）")
     end_index: int = Field(..., ge=1, description="结束索引（1-based 含）")
 
+
 class UpdateDimensionInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -102,6 +110,7 @@ class UpdateDimensionInput(BaseModel):
     fixed_size: int | None = Field(None, description="行高或列宽（像素）")
     visible: bool | None = Field(None, description="是否显示行或列")
 
+
 class WriteImageInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -110,14 +119,16 @@ class WriteImageInput(BaseModel):
     image_base64: str = Field(..., min_length=1, description="图片 base64 编码内容")
     name: str = Field(..., min_length=1, description='图片文件名，含后缀，如 "test.png"')
 
+
 class StylesBatchUpdateInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
     data: list[dict[str, Any]] = Field(
         ...,
-        description='样式数据数组，每项含 ranges（范围列表）和 style（样式对象）',
+        description="样式数据数组，每项含 ranges（范围列表）和 style（样式对象）",
     )
+
 
 class CreateSpreadsheetInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
@@ -173,11 +184,7 @@ async def delete_sheet(args: DeleteSheetInput) -> str:
         client = _get_client()
         await client.delete_sheet(args.spreadsheet_token, args.sheet_id)
         _elapsed = time.time() - _t0
-        return (
-            f"✅ 工作表已删除\n\n"
-            f"- **sheetId**: `{args.sheet_id}`\n"
-            f"- **耗时**: `{_elapsed:.1f}s`"
-        )
+        return f"✅ 工作表已删除\n\n- **sheetId**: `{args.sheet_id}`\n- **耗时**: `{_elapsed:.1f}s`"
     except Exception as e:
         return f"❌ 删除工作表失败：{e}"
 
@@ -223,6 +230,7 @@ async def read_range(args: ReadRangeInput) -> str:
         f"{header}\n{sep}\n{body}"
     )
 
+
 async def read_ranges(args: ReadRangesInput) -> str:
     try:
         _t0 = time.time()
@@ -251,10 +259,7 @@ async def read_ranges(args: ReadRangesInput) -> str:
         section = [f"### {range_name}"]
         header = "| " + " | ".join(str(k) for k in keys) + " |"
         sep = "| " + " | ".join("---" for _ in keys) + " |"
-        body = "\n".join(
-            "| " + " | ".join(str(cell) for cell in row) + " |"
-            for row in values[1:]
-        )
+        body = "\n".join("| " + " | ".join(str(cell) for cell in row) + " |" for row in values[1:])
         section.append(header)
         section.append(sep)
         section.append(body)
@@ -284,7 +289,9 @@ async def append_data(args: AppendDataInput) -> str:
         _t0 = time.time()
         client = _get_client()
         await client.append_data(
-            args.spreadsheet_token, args.sheet_id, args.values,
+            args.spreadsheet_token,
+            args.sheet_id,
+            args.values,
             data_start=args.data_start,
         )
         _elapsed = time.time() - _t0
@@ -338,6 +345,7 @@ async def write_image(args: WriteImageInput) -> str:
         f"- **耗时**: `{_elapsed:.1f}s`"
     )
 
+
 async def update_dimension(args: UpdateDimensionInput) -> str:
     try:
         _t0 = time.time()
@@ -361,6 +369,7 @@ async def update_dimension(args: UpdateDimensionInput) -> str:
         f"- **range**: `{args.start_index}` 到 `{args.end_index}`（1-based 含首尾）\n"
     )
 
+
 async def styles_batch_update(args: StylesBatchUpdateInput) -> str:
     try:
         _t0 = time.time()
@@ -370,19 +379,14 @@ async def styles_batch_update(args: StylesBatchUpdateInput) -> str:
     except Exception as e:
         return f"❌ 批量设置样式失败：{e}"
     total = result.get("totalUpdatedCells", 0)
-    return (
-        f"✅ 样式已更新\n\n"
-        f"- **更新单元格数**: `{total}`\n"
-        f"- **耗时**: `{_elapsed:.1f}s`"
-    )
+    return f"✅ 样式已更新\n\n- **更新单元格数**: `{total}`\n- **耗时**: `{_elapsed:.1f}s`"
+
 
 async def create_spreadsheet(args: CreateSpreadsheetInput) -> str:
     try:
         _t0 = time.time()
         client = _get_client()
-        result = await client.create_spreadsheet(
-            args.title, folder_token=args.folder_token
-        )
+        result = await client.create_spreadsheet(args.title, folder_token=args.folder_token)
         _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 创建电子表格失败：{e}"

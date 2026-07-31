@@ -33,7 +33,7 @@ class QuickSheetsMixin:
         if col_count <= 0:
             return sheet_id
         rng = f"{sheet_id}!A{header_row}:{end_col}{header_row}"
-        headers = await self.read_range(spreadsheet_token, rng)
+        headers = (await self.read_range(spreadsheet_token, rng)).get("values", [])
         if not headers:
             return sheet_id
         raw_headers = headers[0]
@@ -78,10 +78,13 @@ class QuickSheetsMixin:
     ) -> None:
         """按列设置批次索引，列不存在时自动创建"""
         col_letter = await self._ensure_column(
-            spreadsheet_token, sheet_id, batch_column, data_start=data_start,
+            spreadsheet_token,
+            sheet_id,
+            batch_column,
+            data_start=data_start,
         )
 
-        data = await self.read_range(spreadsheet_token, f"{sheet_id}!A:A")
+        data = (await self.read_range(spreadsheet_token, f"{sheet_id}!A:A")).get("values", [])
 
         rows_to_write: list[tuple[int, int]] = []
         batch_num = 1
@@ -137,9 +140,14 @@ class QuickSheetsMixin:
     ) -> dict[str, Any]:
         """获取指定列中最后一个非空值和其行号（跳过表头），返回 {value, row_number}"""
         col_letter = await self._resolve_column_letter(
-            spreadsheet_token, sheet_id, column_name, data_start=data_start,
+            spreadsheet_token,
+            sheet_id,
+            column_name,
+            data_start=data_start,
         )
-        data = await self.read_range(spreadsheet_token, f"{sheet_id}!{col_letter}:{col_letter}")
+        data = (
+            await self.read_range(spreadsheet_token, f"{sheet_id}!{col_letter}:{col_letter}")
+        ).get("values", [])
         for i in range(len(data) - 1, data_start - 2, -1):
             row = data[i]
             if row and row[0] is not None and row[0] != "":
@@ -161,7 +169,7 @@ class QuickSheetsMixin:
         if col_count <= 0:
             return []
         rng = f"{sheet_id}!A{header_row}:{end_col}{header_row}"
-        headers_raw = await self.read_range(spreadsheet_token, rng)
+        headers_raw = (await self.read_range(spreadsheet_token, rng)).get("values", [])
         if not headers_raw:
             return []
         headers = headers_raw[0]
@@ -202,9 +210,11 @@ class QuickSheetsMixin:
         _col_count, _end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
         if _col_count <= 0:
             return
-        headers = (await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A{header_row}:{_end_col}{header_row}"
-        ))[0]
+        headers = (
+            await self.read_range(
+                spreadsheet_token, f"{sheet_id}!A{header_row}:{_end_col}{header_row}"
+            )
+        ).get("values", [[]])[0]
         col_indices = {h: i for i, h in enumerate(headers) if h is not None}
 
         value_ranges: list[dict[str, Any]] = []
@@ -361,7 +371,7 @@ class QuickSheetsMixin:
             batch_size=batch_size,
             batch_interval=batch_interval,
             data_start=data_start,
-            overwrite_start=True
+            overwrite_start=True,
         )
 
     async def quick_sheets_batch_append(
@@ -387,7 +397,7 @@ class QuickSheetsMixin:
 
         if overwrite_start is not None:
             # 从指定行覆盖写入，不用 append_data
-            start_row = data_start if overwrite_start is True else overwrite_start  # type: ignore[comparison-overlap]
+            start_row = data_start if overwrite_start is True else overwrite_start
             col_count = len(headers)
             end_col = self._index_to_letter(col_count - 1)
             for i in range(0, len(values), batch_size):
@@ -428,6 +438,7 @@ class QuickSheetsMixin:
 
         if src.startswith(("http://", "https://")):
             import httpx
+
             async with httpx.AsyncClient() as client:
                 resp = await client.get(src)
                 resp.raise_for_status()
@@ -444,7 +455,10 @@ class QuickSheetsMixin:
             extracted_name = "image.png"
 
         return await self.write_image(
-            spreadsheet_token, range, image_base64, name or extracted_name,
+            spreadsheet_token,
+            range,
+            image_base64,
+            name or extracted_name,
         )
 
     async def quick_sheets_set_row_height(
@@ -475,8 +489,11 @@ class QuickSheetsMixin:
         while current <= data_end:
             batch_end = min(current + _BATCH - 1, data_end)
             await self.update_dimension(
-                spreadsheet_token, sheet_id,
-                major_dimension="ROWS", start_index=current, end_index=batch_end,
+                spreadsheet_token,
+                sheet_id,
+                major_dimension="ROWS",
+                start_index=current,
+                end_index=batch_end,
                 fixed_size=height,
             )
             batch_count += 1
@@ -532,7 +549,8 @@ class QuickSheetsMixin:
             r_end = min(r_start + rows_per_batch - 1, data_end)
             ranges = [f"{sheet_id}!{c}{r_start}:{c}{r_end}" for c in target_cols]
             await self.styles_batch_update(
-                spreadsheet_token, [{"ranges": ranges, "style": style}],
+                spreadsheet_token,
+                [{"ranges": ranges, "style": style}],
             )
 
         return {

@@ -3,7 +3,7 @@
 import os
 from typing import Annotated, Any, Literal
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
@@ -24,7 +24,14 @@ from .tools.bitable import (
     UpdateRecordInput,
 )
 from .tools.bitable_quick import BitableClearInput
-from .tools.drive import CheckTaskInput, CopyFileInput, CreateFolderInput, DeleteFileInput, ListFilesInput, UploadFileInput
+from .tools.drive import (
+    CheckTaskInput,
+    CopyFileInput,
+    CreateFolderInput,
+    DeleteFileInput,
+    ListFilesInput,
+    UploadFileInput,
+)
 from .tools.messages import SendMessageInput
 from .tools.sheets import (
     AddSheetInput,
@@ -52,31 +59,30 @@ from .tools.sheets_quick import (
     QuickWriteImageInput,
     SetBatchIndexInput,
     SetColumnStyleInput,
-    SetRowHeightInput,
     SetHeaderListInput,
+    SetRowHeightInput,
     SyncFromFileInput,
 )
 
-mcp = FastMCP(
+mcp = MCPServer(
     name="lark_mcp",
-    host=os.getenv("MCP_HOST", "127.0.0.1"),
     instructions=(
         "飞书开放平台工具集：发送消息（文本/富文本/卡片/文件等）、操作多维表格"
         "（搜索/创建/更新/删除记录，批量操作，应用和表格管理）、读写电子表格数据、"
         "管理工作表（新增/复制/删除/清空）、批量数据处理（追加/更新/按批次读写/从 CSV 同步）。"
     ),
+    version=__version__,
 )
-mcp._mcp_server.version = __version__
 
 
 @mcp.tool(
     name="message_send",
     annotations=ToolAnnotations(
         title="发送飞书消息",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_send_message(
@@ -141,10 +147,10 @@ async def tool_send_message(
     name="drive_copy_file",
     annotations=ToolAnnotations(
         title="复制云文件",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_copy_file(
@@ -157,8 +163,11 @@ async def tool_copy_file(
     """复制文件到指定文件夹。"""
     return await drive.copy_file(
         CopyFileInput(
-            file_token=file_token, name=name, folder_token=folder_token,
-            file_type=file_type, user_id_type=user_id_type,
+            file_token=file_token,
+            name=name,
+            folder_token=folder_token,
+            file_type=file_type,
+            user_id_type=user_id_type,
         )
     )
 
@@ -167,10 +176,10 @@ async def tool_copy_file(
     name="drive_delete_file",
     annotations=ToolAnnotations(
         title="删除云文件或文件夹",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_delete_file(
@@ -178,19 +187,17 @@ async def tool_delete_file(
     file_type: Annotated[str, Field(description="文件类型：file/doc/sheet/bitable/docx/folder")],
 ) -> str:
     """删除云空间内的文件或文件夹（进入回收站）。"""
-    return await drive.delete_file(
-        DeleteFileInput(file_token=file_token, file_type=file_type)
-    )
+    return await drive.delete_file(DeleteFileInput(file_token=file_token, file_type=file_type))
 
 
 @mcp.tool(
     name="drive_check_task",
     annotations=ToolAnnotations(
         title="查询异步任务状态",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_check_task(
@@ -204,10 +211,10 @@ async def tool_check_task(
     name="drive_upload_file",
     annotations=ToolAnnotations(
         title="上传文件到云空间",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_upload_file(
@@ -219,8 +226,10 @@ async def tool_upload_file(
     """上传文件到云空间指定文件夹（最大 20 MB）。"""
     return await drive.upload_file(
         UploadFileInput(
-            file_path=file_path, parent_node=parent_node,
-            file_name=file_name, checksum=checksum,
+            file_path=file_path,
+            parent_node=parent_node,
+            file_name=file_name,
+            checksum=checksum,
         )
     )
 
@@ -229,10 +238,10 @@ async def tool_upload_file(
     name="drive_list_files",
     annotations=ToolAnnotations(
         title="获取文件夹文件清单",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_list_files(
@@ -241,14 +250,19 @@ async def tool_list_files(
     page_token: Annotated[str | None, Field(description="分页 token")] = None,
     order_by: Annotated[str | None, Field(description="排序：EditedTime / CreatedTime")] = None,
     direction: Annotated[str | None, Field(description="排序方向：ASC / DESC")] = None,
-    user_id_type: Annotated[str | None, Field(description="用户 ID 类型：open_id / union_id / user_id")] = None,
+    user_id_type: Annotated[
+        str | None, Field(description="用户 ID 类型：open_id / union_id / user_id")
+    ] = None,
 ) -> str:
     """获取文件夹中的文件清单，支持分页。"""
     return await drive.list_files(
         ListFilesInput(
-            folder_token=folder_token, page_size=page_size,
-            page_token=page_token, order_by=order_by,
-            direction=direction, user_id_type=user_id_type,
+            folder_token=folder_token,
+            page_size=page_size,
+            page_token=page_token,
+            order_by=order_by,
+            direction=direction,
+            user_id_type=user_id_type,
         )
     )
 
@@ -257,10 +271,10 @@ async def tool_list_files(
     name="drive_create_folder",
     annotations=ToolAnnotations(
         title="创建文件夹",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_create_folder(
@@ -268,19 +282,17 @@ async def tool_create_folder(
     folder_token: Annotated[str, Field(description="父文件夹 token", min_length=1)],
 ) -> str:
     """在云空间中创建一个空文件夹。"""
-    return await drive.create_folder(
-        CreateFolderInput(name=name, folder_token=folder_token)
-    )
+    return await drive.create_folder(CreateFolderInput(name=name, folder_token=folder_token))
 
 
 @mcp.tool(
     name="bitable_search_records",
     annotations=ToolAnnotations(
         title="搜索多维表格记录",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_search_records(
@@ -288,7 +300,7 @@ async def tool_search_records(
     table_id: Annotated[str, Field(description="数据表 table_id", min_length=1)],
     view_id: Annotated[str | None, Field(description="视图 ID")] = None,
     field_names: Annotated[list[str] | None, Field(description="指定返回字段名列表")] = None,
-    sort: Annotated[dict[str, Any] | None, Field(description="排序规则")] = None,
+    sort: Annotated[list[dict[str, Any]] | None, Field(description="排序规则")] = None,
     filter: Annotated[dict[str, Any] | None, Field(description="过滤条件")] = None,
     page_token: Annotated[str | None, Field(description="分页 token")] = None,
     page_size: Annotated[int | None, Field(description="分页大小（1-500）", ge=1, le=500)] = None,
@@ -319,10 +331,10 @@ async def tool_search_records(
     name="bitable_create_record",
     annotations=ToolAnnotations(
         title="创建多维表格记录",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_create_record(
@@ -340,10 +352,10 @@ async def tool_create_record(
     name="bitable_update_record",
     annotations=ToolAnnotations(
         title="更新多维表格记录",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_update_record(
@@ -364,10 +376,10 @@ async def tool_update_record(
     name="bitable_delete_record",
     annotations=ToolAnnotations(
         title="删除多维表格记录",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_delete_record(
@@ -385,10 +397,10 @@ async def tool_delete_record(
     name="bitable_batch_create_records",
     annotations=ToolAnnotations(
         title="批量创建多维表格记录",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_batch_create_records(
@@ -409,10 +421,10 @@ async def tool_batch_create_records(
     name="bitable_batch_update_records",
     annotations=ToolAnnotations(
         title="批量更新多维表格记录",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_batch_update_records(
@@ -433,10 +445,10 @@ async def tool_batch_update_records(
     name="bitable_batch_get_records",
     annotations=ToolAnnotations(
         title="批量获取多维表格记录",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_batch_get_records(
@@ -469,10 +481,10 @@ async def tool_batch_get_records(
     name="bitable_batch_delete_records",
     annotations=ToolAnnotations(
         title="批量删除多维表格记录",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_batch_delete_records(
@@ -493,10 +505,10 @@ async def tool_batch_delete_records(
     name="bitable_create_app",
     annotations=ToolAnnotations(
         title="创建多维表格",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_create_app(
@@ -514,10 +526,10 @@ async def tool_create_app(
     name="bitable_copy_app",
     annotations=ToolAnnotations(
         title="复制多维表格",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_copy_app(
@@ -545,10 +557,10 @@ async def tool_copy_app(
     name="bitable_create_table",
     annotations=ToolAnnotations(
         title="创建多维表格数据表",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_create_table(
@@ -559,19 +571,17 @@ async def tool_create_table(
     ],
 ) -> str:
     """在指定多维表格中创建新的数据表。"""
-    return await bitable.create_table(
-        CreateTableInput(app_token=app_token, table=table)
-    )
+    return await bitable.create_table(CreateTableInput(app_token=app_token, table=table))
 
 
 @mcp.tool(
     name="bitable_delete_table",
     annotations=ToolAnnotations(
         title="删除多维表格数据表",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_delete_table(
@@ -579,19 +589,17 @@ async def tool_delete_table(
     table_id: Annotated[str, Field(description="要删除的数据表 ID", min_length=1)],
 ) -> str:
     """删除多维表格中的指定数据表（至少保留一张表）。"""
-    return await bitable.delete_table(
-        DeleteTableInput(app_token=app_token, table_id=table_id)
-    )
+    return await bitable.delete_table(DeleteTableInput(app_token=app_token, table_id=table_id))
 
 
 @mcp.tool(
     name="quick_bitable_clear",
     annotations=ToolAnnotations(
         title="清空多维表格数据",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_bitable_clear(
@@ -600,9 +608,7 @@ async def tool_quick_bitable_clear(
     filter: Annotated[
         dict[str, Any] | None, Field(description="筛选条件，只删除符合条件的数据")
     ] = None,
-    sort: Annotated[
-        list[dict[str, Any]] | None, Field(description="排序条件")
-    ] = None,
+    sort: Annotated[list[dict[str, Any]] | None, Field(description="排序条件")] = None,
 ) -> str:
     """分页获取所有记录并批量删除，支持筛选条件。"""
     return await bitable_quick.quick_bitable_clear(
@@ -619,10 +625,10 @@ async def tool_quick_bitable_clear(
     name="sheets_get_metainfo",
     annotations=ToolAnnotations(
         title="获取电子表格元信息",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_get_metainfo(
@@ -636,10 +642,10 @@ async def tool_get_metainfo(
     name="sheets_add_sheet",
     annotations=ToolAnnotations(
         title="添加工作表",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_add_sheet(
@@ -654,10 +660,10 @@ async def tool_add_sheet(
     name="sheets_delete_sheet",
     annotations=ToolAnnotations(
         title="删除工作表",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_delete_sheet(
@@ -674,10 +680,10 @@ async def tool_delete_sheet(
     name="sheets_copy_sheet",
     annotations=ToolAnnotations(
         title="复制工作表",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_copy_sheet(
@@ -694,14 +700,15 @@ async def tool_copy_sheet(
         )
     )
 
+
 @mcp.tool(
     name="sheets_create_spreadsheet",
     annotations=ToolAnnotations(
         title="创建电子表格",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_create_spreadsheet(
@@ -718,48 +725,44 @@ async def tool_create_spreadsheet(
     name="sheets_get_spreadsheet",
     annotations=ToolAnnotations(
         title="获取电子表格信息",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_get_spreadsheet(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
 ) -> str:
     """获取电子表格的基本信息。"""
-    return await sheets.get_spreadsheet(
-        GetMetainfoInput(spreadsheet_token=spreadsheet_token)
-    )
+    return await sheets.get_spreadsheet(GetMetainfoInput(spreadsheet_token=spreadsheet_token))
 
 
 @mcp.tool(
     name="sheets_query_sheets",
     annotations=ToolAnnotations(
         title="查询所有工作表",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_query_sheets(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
 ) -> str:
     """查询电子表格中的所有工作表。"""
-    return await sheets.query_sheets(
-        GetMetainfoInput(spreadsheet_token=spreadsheet_token)
-    )
+    return await sheets.query_sheets(GetMetainfoInput(spreadsheet_token=spreadsheet_token))
 
 
 @mcp.tool(
     name="sheets_read_range",
     annotations=ToolAnnotations(
         title="读取电子表格范围",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_read_range(
@@ -776,17 +779,21 @@ async def tool_read_range(
     name="sheets_read_ranges",
     annotations=ToolAnnotations(
         title="读取多个范围数据",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_read_ranges(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
-    ranges: Annotated[str, Field(description='多个范围，逗号分隔，如 "sheetId1!A2:B6,sheetId2!B1:C8"', min_length=1)],
+    ranges: Annotated[
+        str,
+        Field(description='多个范围，逗号分隔，如 "sheetId1!A2:B6,sheetId2!B1:C8"', min_length=1),
+    ],
     value_render_option: Annotated[
-        str | None, Field(description="值渲染选项：ToString / Formula / FormattedValue / UnformattedValue")
+        str | None,
+        Field(description="值渲染选项：ToString / Formula / FormattedValue / UnformattedValue"),
     ] = None,
     date_time_render_option: Annotated[
         str | None, Field(description="日期时间渲染选项：FormattedString")
@@ -811,10 +818,10 @@ async def tool_read_ranges(
     name="sheets_write_image",
     annotations=ToolAnnotations(
         title="写入电子表格图片",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_write_image(
@@ -838,10 +845,10 @@ async def tool_write_image(
     name="sheets_write_range",
     annotations=ToolAnnotations(
         title="写入电子表格范围",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_write_range(
@@ -863,10 +870,10 @@ async def tool_write_range(
     name="sheets_append_data",
     annotations=ToolAnnotations(
         title="追加电子表格数据",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_append_data(
@@ -885,14 +892,15 @@ async def tool_append_data(
         )
     )
 
+
 @mcp.tool(
     name="sheets_delete_dimension",
     annotations=ToolAnnotations(
         title="删除电子表格行列",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_delete_dimension(
@@ -918,10 +926,10 @@ async def tool_delete_dimension(
     name="sheets_update_dimension",
     annotations=ToolAnnotations(
         title="更新行列属性",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_update_dimension(
@@ -951,17 +959,17 @@ async def tool_update_dimension(
     name="sheets_styles_batch_update",
     annotations=ToolAnnotations(
         title="批量设置单元格样式",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_styles_batch_update(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     data: Annotated[
         list[dict[str, Any]],
-        Field(description='样式数据，每项含 ranges（范围列表）和 style（样式对象）'),
+        Field(description="样式数据，每项含 ranges（范围列表）和 style（样式对象）"),
     ],
 ) -> str:
     """批量设置单元格样式，单次最多 50000 个单元格。"""
@@ -974,10 +982,10 @@ async def tool_styles_batch_update(
     name="quick_sheets_filter_columns",
     annotations=ToolAnnotations(
         title="过滤工作表列",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_filter_columns(
@@ -998,14 +1006,15 @@ async def tool_quick_sheets_filter_columns(
         )
     )
 
+
 @mcp.tool(
     name="quick_sheets_set_batch_index",
     annotations=ToolAnnotations(
         title="设置批次索引",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_set_batch_index(
@@ -1033,10 +1042,10 @@ async def tool_quick_sheets_set_batch_index(
     name="quick_sheets_set_header_list",
     annotations=ToolAnnotations(
         title="写入新表头",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_set_header_list(
@@ -1064,10 +1073,10 @@ async def tool_quick_sheets_set_header_list(
     name="quick_sheets_get_column_last_value",
     annotations=ToolAnnotations(
         title="获取列最后一个数值",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_get_column_last_value(
@@ -1091,10 +1100,10 @@ async def tool_quick_sheets_get_column_last_value(
     name="quick_sheets_get_rows_by_batch",
     annotations=ToolAnnotations(
         title="按批次读取行",
-        readOnlyHint=True,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_get_rows_by_batch(
@@ -1120,10 +1129,10 @@ async def tool_quick_sheets_get_rows_by_batch(
     name="quick_sheets_batch_update",
     annotations=ToolAnnotations(
         title="批量更新行数据",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_batch_update(
@@ -1155,10 +1164,10 @@ async def tool_quick_sheets_batch_update(
     name="quick_sheets_batch_append",
     annotations=ToolAnnotations(
         title="批量追加行数据",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_batch_append(
@@ -1169,7 +1178,8 @@ async def tool_quick_sheets_batch_append(
     batch_interval: Annotated[int, Field(description="每批追加间隔秒数，默认 2", ge=0, le=30)] = 2,
     data_start: Annotated[int, Field(description="数据起始行（1-based），默认 2", ge=1)] = 2,
     overwrite_start: Annotated[
-        int | bool | None, Field(description="True 从 data_start 覆写，int 从指定行覆写，None 使用 append 寻址")
+        int | bool | None,
+        Field(description="True 从 data_start 覆写，int 从指定行覆写，None 使用 append 寻址"),
     ] = None,
 ) -> str:
     """批量追加行到工作表，自动分片并带间隔。指定 overwrite_start 则从该行覆盖写入。"""
@@ -1190,10 +1200,10 @@ async def tool_quick_sheets_batch_append(
     name="quick_sheets_sync_from_file",
     annotations=ToolAnnotations(
         title="从 CSV 文件同步数据到工作表",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_sync_from_file(
@@ -1219,10 +1229,10 @@ async def tool_quick_sheets_sync_from_file(
     name="quick_sheets_clear_content",
     annotations=ToolAnnotations(
         title="清空工作表内容（不移除行）",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_clear_content(
@@ -1230,7 +1240,10 @@ async def tool_quick_sheets_clear_content(
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
     keep_header: Annotated[bool, Field(description="是否保留首行表头，默认 true")] = True,
     data_start: Annotated[int, Field(description="数据起始行号，默认 2", ge=1)] = 2,
-    before_column: Annotated[str | None, Field(description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列')] = None,
+    before_column: Annotated[
+        str | None,
+        Field(description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列'),
+    ] = None,
 ) -> str:
     """清空工作表数据内容（不移除行）。指定 before_column 则只清空该列之前的所有列。"""
     return await sheets_quick.quick_sheets_clear_content(
@@ -1248,10 +1261,10 @@ async def tool_quick_sheets_clear_content(
     name="quick_sheets_set_row_height",
     annotations=ToolAnnotations(
         title="设置工作表的行高",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=True,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_set_row_height(
@@ -1277,16 +1290,18 @@ async def tool_quick_sheets_set_row_height(
     name="quick_sheets_set_column_style",
     annotations=ToolAnnotations(
         title="批量设置列样式",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_set_column_style(
     spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
     sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
-    style: Annotated[dict[str, Any], Field(description="样式配置，传给 styles_batch_update 的 style 对象")],
+    style: Annotated[
+        dict[str, Any], Field(description="样式配置，传给 styles_batch_update 的 style 对象")
+    ],
     columns: Annotated[
         list[str] | None, Field(description='指定列字母列表，如 ["A", "C"]。不传则全部列')
     ] = None,
@@ -1310,10 +1325,10 @@ async def tool_quick_sheets_set_column_style(
     name="quick_sheets_clear_sheet",
     annotations=ToolAnnotations(
         title="清空工作表数据（删除行）",
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_clear_sheet(
@@ -1337,10 +1352,10 @@ async def tool_quick_sheets_clear_sheet(
     name="quick_sheets_write_image",
     annotations=ToolAnnotations(
         title="快捷写入电子表格图片",
-        readOnlyHint=False,
-        destructiveHint=False,
-        idempotentHint=False,
-        openWorldHint=True,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
     ),
 )
 async def tool_quick_sheets_write_image(
@@ -1354,7 +1369,7 @@ async def tool_quick_sheets_write_image(
         ),
     ],
     name: Annotated[
-        str | None, Field(description='图片文件名（含后缀），不传则自动从 image_source 提取')
+        str | None, Field(description="图片文件名（含后缀），不传则自动从 image_source 提取")
     ] = None,
 ) -> str:
     """向单元格写入图片，支持网络图片、本地文件、base64 三种来源。"""
@@ -1371,8 +1386,11 @@ async def tool_quick_sheets_write_image(
 def main() -> None:
     transport = os.getenv("MCP_TRANSPORT", "stdio")
     if transport == "streamable-http":
-        mcp.settings.port = int(os.getenv("MCP_PORT", "8000"))
-        mcp.run(transport="streamable-http")
+        mcp.run(
+            transport="streamable-http",
+            host=os.getenv("MCP_HOST", "127.0.0.1"),
+            port=int(os.getenv("MCP_PORT", "8000")),
+        )
     else:
         mcp.run()
 

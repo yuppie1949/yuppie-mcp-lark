@@ -29,7 +29,7 @@ class CreateRecordInput(BaseModel):
 
     app_token: str = Field(..., min_length=1, description="多维表格 app_token")
     table_id: str = Field(..., min_length=1, description="数据表 table_id")
-    fields: dict[str, Any] = Field(..., description="记录字段数据，如 {\"字段名\": \"字段值\"}")
+    fields: dict[str, Any] = Field(..., description='记录字段数据，如 {"字段名": "字段值"}')
 
 
 class UpdateRecordInput(BaseModel):
@@ -56,7 +56,7 @@ class SearchRecordsInput(BaseModel):
     table_id: str = Field(..., min_length=1, description="数据表 table_id")
     view_id: str | None = Field(None, description="视图 ID")
     field_names: list[str] | None = Field(None, description="指定返回字段名列表")
-    sort: dict[str, Any] | None = Field(None, description="排序规则，如 {field_name, desc}")
+    sort: list[dict[str, Any]] | None = Field(None, description="排序规则，如 [{field_name, desc}]")
     filter: dict[str, Any] | None = Field(None, description="过滤条件")
     page_token: str | None = Field(None, description="分页 token")
     page_size: int | None = Field(None, ge=1, le=500, description="分页大小")
@@ -222,7 +222,11 @@ async def search_records(args: SearchRecordsInput) -> str:
     sep = "| " + " | ".join("---" for _ in keys) + " |"
     body = "\n".join("| " + " | ".join(str(item.get(k, "")) for k in keys) + " |" for item in items)
     more_hint = f"\n\n> 还有更多数据，page_token=`{page_token}`" if has_more else ""
-    return f"✅ 查询完成，共 {total} 条记录\n- **耗时**: `{_elapsed:.1f}s`\n\n{header}\n{sep}\n{body}{more_hint}"
+    return (
+        f"✅ 查询完成，共 {total} 条记录\n"
+        f"- **耗时**: `{_elapsed:.1f}s`\n\n"
+        f"{header}\n{sep}\n{body}{more_hint}"
+    )
 
 
 async def batch_create_records(args: BatchCreateRecordsInput) -> str:
@@ -271,12 +275,18 @@ async def batch_get_records(args: BatchGetRecordsInput) -> str:
     header = "| record_id | " + " | ".join(keys) + " |"
     sep = "| --- | " + " | ".join("---" for _ in keys) + " |"
     body = "\n".join(
-        "| " + r.get("record_id", "")
-        + " | " + " | ".join(str(r.get("fields", {}).get(k, "")) for k in keys)
+        "| "
+        + r.get("record_id", "")
+        + " | "
+        + " | ".join(str(r.get("fields", {}).get(k, "")) for k in keys)
         + " |"
         for r in records
     )
-    return f"✅ 查询完成，共 {len(records)} 条记录\n- **耗时**: `{_elapsed:.1f}s`\n\n{header}\n{sep}\n{body}"
+    return (
+        f"✅ 查询完成，共 {len(records)} 条记录\n"
+        f"- **耗时**: `{_elapsed:.1f}s`\n\n"
+        f"{header}\n{sep}\n{body}"
+    )
 
 
 async def batch_delete_records(args: BatchDeleteRecordsInput) -> str:

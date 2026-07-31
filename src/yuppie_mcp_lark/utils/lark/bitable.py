@@ -66,7 +66,7 @@ class BitableMixin:
         *,
         view_id: str | None = None,
         field_names: list[str] | None = None,
-        sort: dict[str, Any] | None = None,
+        sort: list[dict[str, Any]] | None = None,
         filter: dict[str, Any] | None = None,
         page_token: str | None = None,
         page_size: int | None = None,

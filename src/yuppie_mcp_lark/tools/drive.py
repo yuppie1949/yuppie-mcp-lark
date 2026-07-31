@@ -35,7 +35,10 @@ async def copy_file(args: CopyFileInput) -> str:
         _t0 = time.time()
         client = _get_client()
         result = await client.copy_file(
-            args.file_token, args.name, args.folder_token, args.file_type,
+            args.file_token,
+            args.name,
+            args.folder_token,
+            args.file_type,
             user_id_type=args.user_id_type,
         )
         _elapsed = time.time() - _t0
@@ -68,7 +71,7 @@ async def delete_file(args: DeleteFileInput) -> str:
         _elapsed = time.time() - _t0
     except Exception as e:
         return f"❌ 删除文件失败：{e}"
-    lines = [f"✅ 文件已删除", f"- **file_token**: `{args.file_token}`"]
+    lines = ["✅ 文件已删除", f"- **file_token**: `{args.file_token}`"]
     lines.append(f"- **耗时**: `{_elapsed:.1f}s`")
     task_id = result.get("task_id", "")
     if task_id:
@@ -113,8 +116,10 @@ async def upload_file(args: UploadFileInput) -> str:
         _t0 = time.time()
         client = _get_client()
         result = await client.upload_file(
-            args.file_path, args.parent_node,
-            file_name=args.file_name, checksum=args.checksum,
+            args.file_path,
+            args.parent_node,
+            file_name=args.file_name,
+            checksum=args.checksum,
         )
         _elapsed = time.time() - _t0
     except Exception as e:
@@ -164,9 +169,7 @@ async def list_files(args: ListFilesInput) -> str:
     lines.append("| name | type | token |")
     lines.append("| --- | --- | --- |")
     for f in files:
-        lines.append(
-            f"| {f.get('name', '')} | {f.get('type', '')} | {f.get('token', '')} |"
-        )
+        lines.append(f"| {f.get('name', '')} | {f.get('type', '')} | {f.get('token', '')} |")
     return "\n".join(lines)
 
 

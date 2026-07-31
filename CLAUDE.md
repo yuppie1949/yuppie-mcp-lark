@@ -30,7 +30,7 @@ LARK_APP_ID=cli_xxx LARK_APP_SECRET=xxx uv run yuppie-mcp-lark
 
 ### 核心模块
 
-- **`server.py`**: MCP Server 入口，FastMCP 注册 29 个工具
+- **`server.py`**: MCP Server 入口，MCPServer 注册 48 个工具
 - **`utils/config.py`**: `LarkConfig` 数据类，`from_env()` 读取并校验 `LARK_APP_ID`/`LARK_APP_SECRET`/`LARK_BASE_URL`，自动加载 `.env`
 - **`utils/lark/`**: 飞书客户端（mixin 模式）
   - `base.py` — `_LarkBase`：httpx client、tenant_access_token 自动刷新、`_request`/`_get`/`_post`/`_put`、`_index_to_letter`、90217 限流重试；`_LarkMixinProtocol`：mixin 自引用协议

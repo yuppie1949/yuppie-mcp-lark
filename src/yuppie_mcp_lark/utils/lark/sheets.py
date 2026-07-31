@@ -260,13 +260,11 @@ class SheetsMixin:
         if folder_token:
             body["folder_token"] = folder_token
         return await self._post(
-            f"/open-apis/sheets/v3/spreadsheets",
+            "/open-apis/sheets/v3/spreadsheets",
             json_data=body,
         )
 
-    async def get_spreadsheet(
-        self: _LarkMixinProtocol, spreadsheet_token: str
-    ) -> dict[str, Any]:
+    async def get_spreadsheet(self: _LarkMixinProtocol, spreadsheet_token: str) -> dict[str, Any]:
         """获取电子表格信息
 
         文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/spreadsheet/get
@@ -275,11 +273,10 @@ class SheetsMixin:
             f"/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}",
         )
 
-    async def query_sheets(
-        self: _LarkMixinProtocol, spreadsheet_token: str
-    ) -> dict[str, Any]:
+    async def query_sheets(self: _LarkMixinProtocol, spreadsheet_token: str) -> dict[str, Any]:
         """获取工作表
-        根据电子表格 token 获取表格中所有工作表及其属性信息，包括工作表 ID、标题、索引位置、是否被隐藏等。
+        根据电子表格 token 获取表格中所有工作表及其属性信息，
+        包括工作表 ID、标题、索引位置、是否被隐藏等。
 
         文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/spreadsheet-sheet/query
         """
@@ -344,12 +341,13 @@ class SheetsMixin:
         header_row = data_start - 1
         try:
             return await self._resolve_column_letter(
-                spreadsheet_token, sheet_id, column_name, data_start=data_start,
+                spreadsheet_token,
+                sheet_id,
+                column_name,
+                data_start=data_start,
             )
         except Exception:
-            col_count, end_col = await self._get_sheet_dimensions(
-                spreadsheet_token, sheet_id
-            )
+            col_count, end_col = await self._get_sheet_dimensions(spreadsheet_token, sheet_id)
             if col_count > 0:
                 headers = await self.read_range(
                     spreadsheet_token, f"{sheet_id}!A{header_row}:{end_col}{header_row}"
@@ -366,7 +364,6 @@ class SheetsMixin:
                 [[column_name]],
             )
             return col_letter
-
 
     async def _resolve_column_letter(
         self: _LarkMixinProtocol,

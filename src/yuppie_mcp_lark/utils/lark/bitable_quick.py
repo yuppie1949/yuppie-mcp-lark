@@ -52,9 +52,7 @@ class QuickBitableMixin:
             if not items:
                 break
 
-            all_record_ids.extend(
-                item["record_id"] for item in items if item.get("record_id")
-            )
+            all_record_ids.extend(item["record_id"] for item in items if item.get("record_id"))
 
             page_token = result.get("page_token")
             if not page_token:

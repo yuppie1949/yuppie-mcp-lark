@@ -67,13 +67,9 @@ class _LarkMixinProtocol(Protocol):
         *,
         user_id_type: str | None = ...,
     ) -> dict[str, Any]: ...
-    async def delete_file(
-        self, file_token: str, file_type: str
-    ) -> dict[str, Any]: ...
+    async def delete_file(self, file_token: str, file_type: str) -> dict[str, Any]: ...
     async def check_task(self, task_id: str) -> dict[str, Any]: ...
-    async def create_folder(
-        self, name: str, folder_token: str
-    ) -> dict[str, Any]: ...
+    async def create_folder(self, name: str, folder_token: str) -> dict[str, Any]: ...
     async def list_files(
         self,
         *,
@@ -93,7 +89,7 @@ class _LarkMixinProtocol(Protocol):
         *,
         view_id: str | None = ...,
         field_names: list[str] | None = ...,
-        sort: dict[str, Any] | None = ...,
+        sort: list[dict[str, Any]] | None = ...,
         filter: dict[str, Any] | None = ...,
         page_token: str | None = ...,
         page_size: int | None = ...,
@@ -126,8 +122,12 @@ class _LarkMixinProtocol(Protocol):
         self, spreadsheet_token: str, value_ranges: list[dict[str, Any]]
     ) -> dict[str, Any]: ...
     async def append_data(
-        self, spreadsheet_token: str, sheet_id: str, values: list[list[Any]],
-        *, data_start: int = ...,
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        values: list[list[Any]],
+        *,
+        data_start: int = ...,
     ) -> None: ...
     async def delete_dimension(
         self,
@@ -167,11 +167,14 @@ class _LarkMixinProtocol(Protocol):
         self, spreadsheet_token: str, sheet_id: str
     ) -> tuple[int, str]: ...
 
-
     # ── QuickSheetsMixin ──
     async def quick_sheets_filter_columns(
-        self, spreadsheet_token: str, sheet_id: str, keep_columns: list[str],
-        *, data_start: int = ...,
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        keep_columns: list[str],
+        *,
+        data_start: int = ...,
     ) -> str: ...
     async def quick_sheets_set_batch_index(
         self,
@@ -195,8 +198,13 @@ class _LarkMixinProtocol(Protocol):
         self, spreadsheet_token: str, sheet_id: str, column_name: str, *, data_start: int = ...
     ) -> dict[str, Any]: ...
     async def quick_sheets_get_rows_by_batch(
-        self, spreadsheet_token: str, sheet_id: str, batch_id: int, batch_size: int,
-        *, data_start: int = ...,
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        batch_id: int,
+        batch_size: int,
+        *,
+        data_start: int = ...,
     ) -> list[dict[str, Any]]: ...
     async def quick_sheets_batch_update(
         self,
@@ -219,6 +227,7 @@ class _LarkMixinProtocol(Protocol):
         batch_size: int = ...,
         batch_interval: int = ...,
         data_start: int = ...,
+        overwrite_start: int | bool | None = ...,
     ) -> None: ...
     async def quick_sheets_write_image(
         self, spreadsheet_token: str, range: str, image_source: str, name: str | None = ...

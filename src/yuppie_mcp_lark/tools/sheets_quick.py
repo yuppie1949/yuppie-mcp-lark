@@ -80,11 +80,11 @@ class BatchUpdateInput(BaseModel):
     sheet_id: str = Field(..., min_length=1, description="工作表 ID")
     update_data: list[dict[str, Any]] = Field(
         ...,
-        description='更新数据。每个 dict 含 row_number 和要更新的列',
+        description="更新数据。每个 dict 含 row_number 和要更新的列",
     )
     columns: list[str] | None = Field(
         None,
-        description='要写入的列名列表。为 None 时从第一条数据自动推导',
+        description="要写入的列名列表。为 None 时从第一条数据自动推导",
     )
     data_start: int = Field(2, ge=1, description="数据起始行（1-based），默认 2")
 
@@ -99,7 +99,8 @@ class BatchAppendInput(BaseModel):
     batch_interval: int = Field(2, ge=0, le=30, description="每批追加间隔秒数，默认 2")
     data_start: int = Field(2, ge=1, description="数据起始行（1-based），默认 2")
     overwrite_start: int | bool | None = Field(
-        None, description="True 从 data_start 覆写，int 从指定行覆写，None 使用 append 自动寻址",
+        None,
+        description="True 从 data_start 覆写，int 从指定行覆写，None 使用 append 自动寻址",
     )
 
 
@@ -130,8 +131,10 @@ class ClearSheetContentInput(BaseModel):
     keep_header: bool = Field(True, description="是否保留首行表头，默认 true")
     data_start: int = Field(2, ge=1, description="数据起始行号，keep_header 时保留前一行（header）")
     before_column: str | None = Field(
-        None, description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列',
+        None,
+        description='指定列字母（如 "F"），只清空该列之前的所有列。不指定则清空全部列',
     )
+
 
 class SetRowHeightInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
@@ -142,13 +145,16 @@ class SetRowHeightInput(BaseModel):
     start_row: int = Field(2, ge=1, description="起始行号，默认 2（跳过表头）")
     end_row: int | None = Field(None, description="结束行号，不传则到最后一行")
 
+
 class SetColumnStyleInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
     sheet_id: str = Field(..., min_length=1, description="工作表 ID")
     style: dict[str, Any] = Field(..., description="样式配置，传 styles_batch_update 的 style 对象")
-    columns: list[str] | None = Field(None, description='指定列字母列表，如 ["A", "C"]。不传则全部列')
+    columns: list[str] | None = Field(
+        None, description='指定列字母列表，如 ["A", "C"]。不传则全部列'
+    )
     start_row: int = Field(2, ge=1, description="起始行号，默认 2（跳过表头）")
     end_row: int | None = Field(None, description="结束行号，不传则到最后一行")
 
@@ -158,7 +164,9 @@ async def quick_sheets_filter_columns(args: FilterSheetColumnsInput) -> str:
         _t0 = time.time()
         client = _get_client()
         sheet_id = await client.quick_sheets_filter_columns(
-            args.spreadsheet_token, args.sheet_id, args.keep_columns,
+            args.spreadsheet_token,
+            args.sheet_id,
+            args.keep_columns,
             data_start=args.data_start,
         )
         _elapsed = time.time() - _t0
@@ -218,7 +226,9 @@ async def quick_sheets_get_column_last_value(args: GetColumnLastValueInput) -> s
         _t0 = time.time()
         client = _get_client()
         result = await client.quick_sheets_get_last_value(
-            args.spreadsheet_token, args.sheet_id, args.column_name,
+            args.spreadsheet_token,
+            args.sheet_id,
+            args.column_name,
             data_start=args.data_start,
         )
         _elapsed = time.time() - _t0
@@ -238,7 +248,10 @@ async def quick_sheets_get_rows_by_batch(args: GetRowsByBatchInput) -> str:
         _t0 = time.time()
         client = _get_client()
         rows = await client.quick_sheets_get_rows_by_batch(
-            args.spreadsheet_token, args.sheet_id, args.batch_id, args.batch_size,
+            args.spreadsheet_token,
+            args.sheet_id,
+            args.batch_id,
+            args.batch_size,
             data_start=args.data_start,
         )
         _elapsed = time.time() - _t0
@@ -315,9 +328,7 @@ async def quick_sheets_sync_from_file(args: SyncFromFileInput) -> str:
         )
         _elapsed = time.time() - _t0
         return (
-            f"✅ 从文件同步完成\n\n"
-            f"- **耗时**: `{_elapsed:.1f}s`\n"
-            f"- **文件**: `{args.file_path}`\n"
+            f"✅ 从文件同步完成\n\n- **耗时**: `{_elapsed:.1f}s`\n- **文件**: `{args.file_path}`\n"
         )
     except Exception as e:
         return f"❌ 从文件同步失败：{e}"
@@ -368,10 +379,13 @@ class QuickWriteImageInput(BaseModel):
     spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
     range: str = Field(..., min_length=1, description='单元格范围，如 "sheetId!A1:A1"')
     image_source: str = Field(
-        ..., min_length=1,
+        ...,
+        min_length=1,
         description="图片来源：网络 URL（http/https）、本地文件路径、或 base64 字符串",
     )
-    name: str | None = Field(None, description='图片文件名（含后缀），不传则从 image_source 自动提取')
+    name: str | None = Field(
+        None, description="图片文件名（含后缀），不传则从 image_source 自动提取"
+    )
 
 
 async def quick_sheets_write_image(args: QuickWriteImageInput) -> str:
@@ -389,6 +403,7 @@ async def quick_sheets_write_image(args: QuickWriteImageInput) -> str:
         f"- **range**: `{result.get('updateRange', '')}`\n"
         f"- **耗时**: `{_elapsed:.1f}s`"
     )
+
 
 async def quick_sheets_set_row_height(args: SetRowHeightInput) -> str:
     try:
@@ -411,6 +426,7 @@ async def quick_sheets_set_row_height(args: SetRowHeightInput) -> str:
         f"- **行数**: `{result['updated_rows']}`\n"
         f"- **批次数**: `{result['batch_count']}`\n"
     )
+
 
 async def quick_sheets_set_column_style(args: SetColumnStyleInput) -> str:
     try:
