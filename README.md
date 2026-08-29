@@ -49,13 +49,15 @@
 | `LARK_APP_SECRET` | 是 | - | 飞书应用 App Secret |
 | `LARK_BASE_URL` | 否 | `https://open.feishu.cn` | 国际版设为 `https://open.larksuite.com` |
 
-## 可用工具（共 48 个）
+## 可用工具（共 50 个）
 
 ### 消息
 
 | 工具 | 说明 |
 |------|------|
 | `message_send` | 发送消息（支持 text/post/image/interactive 等） |
+| `card_send` | 发送卡片消息（interactive，card 传卡片 schema 对象） |
+| `card_update` | 原地更新已发送的卡片（PATCH） |
 
 ### 云文档
 

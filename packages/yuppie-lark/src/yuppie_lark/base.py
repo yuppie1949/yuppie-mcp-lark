@@ -57,6 +57,14 @@ class _LarkMixinProtocol(Protocol):
         uuid: str | None = ...,
     ) -> dict[str, Any]: ...
 
+    async def update_message(
+        self,
+        message_id: str,
+        content: str,
+        *,
+        msg_type: str = ...,
+    ) -> dict[str, Any]: ...
+
     # ── DriveMixin ──
     async def copy_file(
         self,

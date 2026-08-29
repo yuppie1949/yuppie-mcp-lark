@@ -32,7 +32,7 @@ from .tools.drive import (
     ListFilesInput,
     UploadFileInput,
 )
-from .tools.messages import SendMessageInput
+from .tools.messages import SendCardInput, SendMessageInput, UpdateCardInput
 from .tools.sheets import (
     AddSheetInput,
     AppendDataInput,
@@ -139,6 +139,76 @@ async def tool_send_message(
             content=content,
             receive_id_type=receive_id_type,
             uuid=uuid,
+        )
+    )
+
+
+@mcp.tool(
+    name="card_send",
+    annotations=ToolAnnotations(
+        title="发送飞书卡片",
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
+    ),
+)
+async def tool_send_card(
+    receive_id: Annotated[
+        str,
+        Field(description="接收者 ID（群 chat_id / 用户 open_id）", min_length=1),
+    ],
+    card: Annotated[
+        dict[str, Any],
+        Field(
+            description=(
+                "卡片 JSON 对象（飞书卡片 schema），"
+                "如 {\"elements\":[...], \"header\":{...}}"
+            )
+        ),
+    ],
+    receive_id_type: Annotated[
+        str,
+        Field(description="ID 类型：open_id / user_id / union_id / chat_id，默认 chat_id"),
+    ] = "chat_id",
+    uuid: Annotated[
+        str | None,
+        Field(description="去重序列号，相同 uuid 在 1 小时内至多发送一条消息", max_length=50),
+    ] = None,
+) -> str:
+    """发送卡片消息（interactive）。card 为卡片 schema 对象，内部自动 JSON 序列化。"""
+    return await messages.send_card(
+        SendCardInput(
+            receive_id=receive_id,
+            card=card,
+            receive_id_type=receive_id_type,
+            uuid=uuid,
+        )
+    )
+
+
+@mcp.tool(
+    name="card_update",
+    annotations=ToolAnnotations(
+        title="更新飞书卡片",
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=True,
+    ),
+)
+async def tool_update_card(
+    message_id: Annotated[str, Field(description="要更新的消息 ID", min_length=1)],
+    card: Annotated[
+        dict[str, Any],
+        Field(description="新的卡片 JSON 对象（飞书卡片 schema）"),
+    ],
+) -> str:
+    """原地更新已发送的卡片消息（PATCH）。card 为完整的新卡片 schema 对象。"""
+    return await messages.update_card(
+        UpdateCardInput(
+            message_id=message_id,
+            card=card,
         )
     )
 

@@ -39,7 +39,7 @@ packages/
 │   ├── __init__.py                  # LarkClient mixin 聚合 + LarkConfig re-export
 │   ├── config.py                    # LarkConfig 数据类
 │   ├── base.py                      # _LarkBase：httpx client、token 刷新、_request、90217 限流重试
-│   ├── messages.py                  # MessagesMixin：消息发送
+│   ├── messages.py                  # MessagesMixin：消息发送 + 卡片发送/更新（send_card/update_card）
 │   ├── bitable.py                   # BitableMixin：多维表格记录增删改查、批量操作
 │   ├── bitable_quick.py             # QuickBitableMixin：多维表格编排型快捷操作
 │   ├── drive.py                     # DriveMixin：云文档/文件夹管理
@@ -47,7 +47,7 @@ packages/
 │   └── sheets_quick.py              # QuickSheetsMixin：电子表格快捷业务操作
 └── yuppie-mcp-lark/src/yuppie_mcp_lark/   # 壳包（MCP 工具层）
     ├── __init__.py                  # __version__
-    ├── server.py                    # 唯一 import mcp 的文件，MCPServer 注册 48 个工具
+    ├── server.py                    # 唯一 import mcp 的文件，MCPServer 注册 50 个工具
     ├── __main__.py
     └── tools/                       # MCP 工具层（按域分），模块级 client 单例懒加载
 ```

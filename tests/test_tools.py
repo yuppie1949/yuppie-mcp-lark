@@ -25,7 +25,7 @@ from yuppie_mcp_lark.tools.drive import (
     ListFilesInput,
     UploadFileInput,
 )
-from yuppie_mcp_lark.tools.messages import SendMessageInput
+from yuppie_mcp_lark.tools.messages import SendCardInput, SendMessageInput, UpdateCardInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
     AppendDataInput,
@@ -77,6 +77,43 @@ def test_send_message_forbids_extra() -> None:
         SendMessageInput(
             receive_id="ou_xxx", content="{}", extra_field="bad"
         )
+
+
+def test_send_card_required_fields() -> None:
+    with pytest.raises(ValidationError):
+        SendCardInput()  # 缺 receive_id 和 card
+
+
+def test_send_card_defaults() -> None:
+    args = SendCardInput(receive_id="oc_xxx", card={"elements": []})
+    assert args.receive_id_type == "chat_id"
+
+
+def test_send_card_accepts_uuid() -> None:
+    args = SendCardInput(
+        receive_id="oc_xxx", card={"elements": []}, uuid="a0d69e20-1dd1-458b-k525-dfeca4015204"
+    )
+    assert args.uuid == "a0d69e20-1dd1-458b-k525-dfeca4015204"
+
+
+def test_send_card_forbids_extra() -> None:
+    with pytest.raises(ValidationError):
+        SendCardInput(receive_id="oc_xxx", card={}, extra_field="bad")
+
+
+def test_update_card_required_fields() -> None:
+    with pytest.raises(ValidationError):
+        UpdateCardInput()  # 缺 message_id 和 card
+
+
+def test_update_card_missing_message_id() -> None:
+    with pytest.raises(ValidationError):
+        UpdateCardInput(card={"elements": []})
+
+
+def test_update_card_forbids_extra() -> None:
+    with pytest.raises(ValidationError):
+        UpdateCardInput(message_id="om_xxx", card={}, extra_field="bad")
 
 
 # ── 云文档域 ──

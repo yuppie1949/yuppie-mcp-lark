@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 from yuppie_lark import LarkClient
@@ -66,3 +66,52 @@ async def send_message(args: SendMessageInput) -> str:
         )
     except Exception as e:
         return f"❌ 发送失败：{e}"
+
+
+class SendCardInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    receive_id: str = Field(..., min_length=1, description="接收者 ID（群 chat_id / 用户 open_id）")
+    card: dict[str, Any] = Field(..., description="卡片 JSON 对象（飞书卡片 schema）")
+    receive_id_type: str = Field(
+        "chat_id", description="ID 类型：open_id / user_id / union_id / chat_id，默认 chat_id"
+    )
+    uuid: str | None = Field(
+        None,
+        max_length=50,
+        description="去重序列号，相同 uuid 在 1 小时内至多发送一条消息",
+    )
+
+
+async def send_card(args: SendCardInput) -> str:
+    try:
+        client = _get_client()
+        data = await client.send_card(
+            args.receive_id,
+            args.card,
+            receive_id_type=args.receive_id_type,
+            uuid=args.uuid,
+        )
+        return (
+            "✅ 卡片发送成功\n\n"
+            f"- **message_id**: `{data.get('message_id', '')}`\n"
+            f"- **receive_id**: `{args.receive_id}`"
+        )
+    except Exception as e:
+        return f"❌ 卡片发送失败：{e}"
+
+
+class UpdateCardInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    message_id: str = Field(..., min_length=1, description="要更新的消息 ID")
+    card: dict[str, Any] = Field(..., description="新的卡片 JSON 对象（飞书卡片 schema）")
+
+
+async def update_card(args: UpdateCardInput) -> str:
+    try:
+        client = _get_client()
+        await client.update_card(args.message_id, args.card)
+        return f"✅ 卡片更新成功\n\n- **message_id**: `{args.message_id}`"
+    except Exception as e:
+        return f"❌ 卡片更新失败：{e}"
