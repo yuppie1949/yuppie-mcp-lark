@@ -2,7 +2,6 @@
 
 import pytest
 from pydantic import ValidationError
-
 from yuppie_mcp_lark.tools.bitable import (
     BatchCreateRecordsInput,
     BatchDeleteRecordsInput,
@@ -18,7 +17,14 @@ from yuppie_mcp_lark.tools.bitable import (
     UpdateRecordInput,
 )
 from yuppie_mcp_lark.tools.bitable_quick import BitableClearInput
-from yuppie_mcp_lark.tools.drive import CheckTaskInput, CopyFileInput, CreateFolderInput, DeleteFileInput, ListFilesInput, UploadFileInput
+from yuppie_mcp_lark.tools.drive import (
+    CheckTaskInput,
+    CopyFileInput,
+    CreateFolderInput,
+    DeleteFileInput,
+    ListFilesInput,
+    UploadFileInput,
+)
 from yuppie_mcp_lark.tools.messages import SendMessageInput
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
@@ -35,7 +41,6 @@ from yuppie_mcp_lark.tools.sheets import (
     WriteImageInput,
     WriteRangeInput,
 )
-
 
 # ── 消息域 ──
 
@@ -416,7 +421,12 @@ def test_delete_dimension_defaults_and_required() -> None:
 
 # ── 电子表格快捷操作域 ──
 
-from yuppie_mcp_lark.tools.sheets_quick import ClearSheetContentInput, QuickWriteImageInput, SetColumnStyleInput, SetRowHeightInput
+from yuppie_mcp_lark.tools.sheets_quick import (
+    ClearSheetContentInput,
+    QuickWriteImageInput,
+    SetColumnStyleInput,
+    SetRowHeightInput,
+)
 
 
 def test_clear_sheet_content_required() -> None:

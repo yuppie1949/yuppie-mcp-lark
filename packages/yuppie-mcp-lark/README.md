@@ -2,6 +2,16 @@
 
 飞书（Lark / Feishu）MCP Server — 让 AI 助手通过 MCP 协议操作飞书消息、多维表格、电子表格。
 
+## 架构
+
+本包是 MCP 壳包，底层飞书客户端逻辑拆分为独立库包 `yuppie-lark`（无 MCP 依赖，可单独 `pip install yuppie-lark` 使用），壳包通过依赖声明引用。仓库为 uv workspace 双包结构：
+
+```
+packages/
+├── yuppie-lark/        # 纯客户端库（PyPI：yuppie-lark，import yuppie_lark）
+└── yuppie-mcp-lark/    # 本 MCP 壳包（PyPI：yuppie-mcp-lark）
+```
+
 ## 特性
 
 - **消息**：发送单聊/群聊消息（文本、富文本、卡片、图片等）
@@ -140,28 +150,6 @@ uv run pytest -v
 
 ```bash
 npx @modelcontextprotocol/inspector uv run yuppie-mcp-lark
-```
-
-## 作为库使用
-
-本仓库拆分为双包：`yuppie-mcp-lark`（MCP 壳包，本 README）+ `yuppie-lark`（飞书客户端纯库，无 MCP 依赖）。若只想在代码里调用飞书客户端而不引入 MCP：
-
-```bash
-pip install yuppie-lark
-```
-
-```python
-import asyncio
-from yuppie_lark import LarkClient, LarkConfig
-
-async def main() -> None:
-    client = LarkClient(LarkConfig.from_env())
-    resp = await client.send_message(
-        receive_id="ou_xxx", msg_type="text", content='{"text": "hello"}'
-    )
-    print(resp)
-
-asyncio.run(main())
 ```
 
 ## License

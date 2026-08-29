@@ -1,8 +1,7 @@
 """LarkClient 底层客户端测试（仅测纯函数，不测网络调用）"""
 
 import pytest
-
-from yuppie_mcp_lark.utils.lark.base import _LarkBase
+from yuppie_lark.base import _LarkBase
 
 
 @pytest.mark.parametrize(
@@ -30,7 +29,7 @@ def test_base_init_strips_trailing_slash() -> None:
 
 def test_lark_client_aggregates_all_mixins() -> None:
     """LarkClient 实例应具备所有 mixin 方法"""
-    from yuppie_mcp_lark.utils.lark import LarkClient
+    from yuppie_lark import LarkClient
 
     client = LarkClient("id", "secret")
     # 消息域
@@ -52,7 +51,7 @@ def test_lark_client_aggregates_all_mixins() -> None:
 
 
 def test_lark_client_accepts_base_url() -> None:
-    from yuppie_mcp_lark.utils.lark import LarkClient
+    from yuppie_lark import LarkClient
 
     client = LarkClient("id", "secret", base_url="https://open.larksuite.com/")
     assert client.base_url == "https://open.larksuite.com"

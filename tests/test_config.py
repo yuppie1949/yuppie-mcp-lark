@@ -1,8 +1,7 @@
 """LarkConfig 环境变量读取与校验测试"""
 
 import pytest
-
-from yuppie_mcp_lark.utils.config import DEFAULT_BASE_URL, LarkConfig
+from yuppie_lark.config import DEFAULT_BASE_URL, LarkConfig
 
 
 def test_from_env_requires_app_id(monkeypatch):
