@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -115,3 +116,34 @@ async def update_card(args: UpdateCardInput) -> str:
         return f"✅ 卡片更新成功\n\n- **message_id**: `{args.message_id}`"
     except Exception as e:
         return f"❌ 卡片更新失败：{e}"
+
+
+class SendWebhookCardInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    card: dict[str, Any] = Field(..., description="卡片 JSON 对象（飞书卡片 schema 2.0）")
+    url: str | None = Field(
+        None,
+        description="自定义机器人 webhook 地址；不传则读环境变量 FEISHU_WEBHOOK_URL",
+    )
+    secret: str | None = Field(
+        None,
+        description="签名密钥；不传则读环境变量 FEISHU_WEBHOOK_SECRET（未配置则不签名）",
+    )
+
+
+async def send_webhook_card(args: SendWebhookCardInput) -> str:
+    try:
+        url = args.url or os.getenv("FEISHU_WEBHOOK_URL", "").strip() or None
+        if not url:
+            return "❌ 卡片发送失败：FEISHU_WEBHOOK_URL 未配置（传 url 参数或设置环境变量）"
+        secret = args.secret or os.getenv("FEISHU_WEBHOOK_SECRET", "").strip() or None
+        client = _get_client()
+        await client.send_webhook_card(url, args.card, secret=secret)
+        return (
+            "✅ 卡片发送成功（自定义机器人 webhook）\n\n"
+            "- **msg_type**: `interactive`\n"
+            "- **特性**: 只能发送，不能更新/撤回"
+        )
+    except Exception as e:
+        return f"❌ 卡片发送失败：{e}"

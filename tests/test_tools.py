@@ -25,7 +25,12 @@ from yuppie_mcp_lark.tools.drive import (
     ListFilesInput,
     UploadFileInput,
 )
-from yuppie_mcp_lark.tools.messages import SendCardInput, SendMessageInput, UpdateCardInput
+from yuppie_mcp_lark.tools.messages import (
+    SendCardInput,
+    SendMessageInput,
+    SendWebhookCardInput,
+    UpdateCardInput,
+)
 from yuppie_mcp_lark.tools.sheets import (
     AddSheetInput,
     AppendDataInput,
@@ -114,6 +119,27 @@ def test_update_card_missing_message_id() -> None:
 def test_update_card_forbids_extra() -> None:
     with pytest.raises(ValidationError):
         UpdateCardInput(message_id="om_xxx", card={}, extra_field="bad")
+
+
+def test_send_webhook_card_required_fields() -> None:
+    with pytest.raises(ValidationError):
+        SendWebhookCardInput()  # 缺 card
+
+
+def test_send_webhook_card_defaults() -> None:
+    args = SendWebhookCardInput(card={"elements": []})
+    assert args.url is None
+    assert args.secret is None
+
+
+def test_send_webhook_card_strips_whitespace() -> None:
+    args = SendWebhookCardInput(card={}, url="  https://example.com/hook  ")
+    assert args.url == "https://example.com/hook"
+
+
+def test_send_webhook_card_forbids_extra() -> None:
+    with pytest.raises(ValidationError):
+        SendWebhookCardInput(card={}, extra_field="bad")
 
 
 # ── 云文档域 ──

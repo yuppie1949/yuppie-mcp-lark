@@ -15,6 +15,7 @@ from .drive import DriveMixin
 from .messages import MessagesMixin
 from .sheets import SheetsMixin
 from .sheets_quick import QuickSheetsMixin
+from .webhook import WebhookMixin
 
 __version__ = "0.2.0"
 
@@ -24,6 +25,7 @@ __all__ = ["LarkClient", "LarkConfig"]
 class LarkClient(
     _LarkBase,
     MessagesMixin,
+    WebhookMixin,
     BitableMixin,
     QuickBitableMixin,
     DriveMixin,

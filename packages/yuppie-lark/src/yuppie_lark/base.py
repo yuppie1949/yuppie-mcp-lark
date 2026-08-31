@@ -65,6 +65,17 @@ class _LarkMixinProtocol(Protocol):
         msg_type: str = ...,
     ) -> dict[str, Any]: ...
 
+    # ── WebhookMixin ──
+    def _sign(self, timestamp: str, secret: str) -> str: ...
+    async def _send_webhook(
+        self,
+        url: str,
+        body: dict[str, Any],
+        *,
+        secret: str | None = ...,
+        timeout: float = ...,
+    ) -> dict[str, Any]: ...
+
     # ── DriveMixin ──
     async def copy_file(
         self,

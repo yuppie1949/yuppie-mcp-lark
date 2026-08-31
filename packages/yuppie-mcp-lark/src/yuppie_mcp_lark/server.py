@@ -32,7 +32,12 @@ from .tools.drive import (
     ListFilesInput,
     UploadFileInput,
 )
-from .tools.messages import SendCardInput, SendMessageInput, UpdateCardInput
+from .tools.messages import (
+    SendCardInput,
+    SendMessageInput,
+    SendWebhookCardInput,
+    UpdateCardInput,
+)
 from .tools.sheets import (
     AddSheetInput,
     AppendDataInput,
@@ -211,6 +216,37 @@ async def tool_update_card(
             card=card,
         )
     )
+
+
+@mcp.tool(
+    name="webhook_card_send",
+    annotations=ToolAnnotations(
+        title="发送卡片到自定义机器人群（webhook）",
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
+    ),
+)
+async def tool_send_webhook_card(
+    card: Annotated[
+        dict[str, Any],
+        Field(description="卡片 JSON 对象（飞书卡片 schema 2.0）"),
+    ],
+    url: Annotated[
+        str | None,
+        Field(description="自定义机器人 webhook 地址；不传则读环境变量 FEISHU_WEBHOOK_URL"),
+    ] = None,
+    secret: Annotated[
+        str | None,
+        Field(description="签名密钥；不传则读环境变量 FEISHU_WEBHOOK_SECRET（未配置则不签名）"),
+    ] = None,
+) -> str:
+    """发送卡片消息到自定义机器人所在群（webhook，无需应用鉴权）。
+
+    注意：webhook 只能发送，不能更新/撤回；请求体 ≤ 20KB。
+    """
+    return await messages.send_webhook_card(SendWebhookCardInput(card=card, url=url, secret=secret))
 
 
 @mcp.tool(
