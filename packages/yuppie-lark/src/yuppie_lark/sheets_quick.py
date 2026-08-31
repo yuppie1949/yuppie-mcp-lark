@@ -176,8 +176,11 @@ class QuickSheetsMixin:
 
         start_row = data_start + (batch_id - 1) * batch_size
         end_row = start_row + batch_size - 1
-        all_data = await self.read_range(
-            spreadsheet_token, f"{sheet_id}!A{start_row}:{end_col}{end_row}"
+        data_rng = f"{sheet_id}!A{start_row}:{end_col}{end_row}"
+        all_data_raw = await self.read_range(spreadsheet_token, data_rng)
+        # read_range 返回 valueRange dict，需取 values（否则迭代得到键名）
+        all_data = (
+            all_data_raw.get("values", []) if isinstance(all_data_raw, dict) else all_data_raw
         )
 
         result: list[dict[str, Any]] = []
