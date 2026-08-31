@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yuppie-lark"
-version = "0.4.0"
+version = "0.4.1"
 description = "Lark/Feishu OpenAPI client library (tenant_access_token auth)"
 readme = "README.md"
 license = "MIT"

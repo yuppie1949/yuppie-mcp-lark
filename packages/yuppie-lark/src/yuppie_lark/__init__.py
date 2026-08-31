@@ -17,7 +17,7 @@ from .sheets import SheetsMixin
 from .sheets_quick import QuickSheetsMixin
 from .webhook import WebhookMixin
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 __all__ = ["LarkClient", "LarkConfig"]
 
