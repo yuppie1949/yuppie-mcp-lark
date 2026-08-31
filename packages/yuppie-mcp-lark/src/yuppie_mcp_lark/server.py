@@ -46,6 +46,7 @@ from .tools.sheets import (
     DeleteDimensionInput,
     DeleteSheetInput,
     GetMetainfoInput,
+    MoveDimensionInput,
     ReadRangeInput,
     ReadRangesInput,
     StylesBatchUpdateInput,
@@ -1024,6 +1025,37 @@ async def tool_delete_dimension(
             major_dimension=major_dimension,
             start_index=start_index,
             end_index=end_index,
+        )
+    )
+
+
+@mcp.tool(
+    name="sheets_move_dimension",
+    annotations=ToolAnnotations(
+        title="移动电子表格行列",
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=True,
+    ),
+)
+async def tool_move_dimension(
+    spreadsheet_token: Annotated[str, Field(description="电子表格 token", min_length=1)],
+    sheet_id: Annotated[str, Field(description="工作表 ID", min_length=1)],
+    start_index: Annotated[int, Field(description="起始索引（0-based 含）", ge=0)],
+    end_index: Annotated[int, Field(description="结束索引（0-based 含）", ge=0)],
+    destination_index: Annotated[int, Field(description="目标位置索引（0-based）", ge=0)],
+    major_dimension: Annotated[str, Field(description="COLUMNS 或 ROWS，默认 COLUMNS")] = "COLUMNS",
+) -> str:
+    """移动行或列（0-based 含首尾，单次最多 5000 行/列）。"""
+    return await sheets.move_dimension(
+        MoveDimensionInput(
+            spreadsheet_token=spreadsheet_token,
+            sheet_id=sheet_id,
+            major_dimension=major_dimension,
+            start_index=start_index,
+            end_index=end_index,
+            destination_index=destination_index,
         )
     )
 

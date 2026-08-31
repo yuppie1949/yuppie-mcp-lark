@@ -39,6 +39,7 @@ from yuppie_mcp_lark.tools.sheets import (
     DeleteDimensionInput,
     DeleteSheetInput,
     GetMetainfoInput,
+    MoveDimensionInput,
     ReadRangeInput,
     ReadRangesInput,
     StylesBatchUpdateInput,
@@ -480,6 +481,56 @@ def test_delete_dimension_defaults_and_required() -> None:
         end_index=3,
     )
     assert args.major_dimension == "COLUMNS"
+
+
+def test_move_dimension_required() -> None:
+    with pytest.raises(ValidationError):
+        MoveDimensionInput()
+
+
+def test_move_dimension_defaults() -> None:
+    args = MoveDimensionInput(
+        spreadsheet_token="x",
+        sheet_id="y",
+        start_index=0,
+        end_index=2,
+        destination_index=5,
+    )
+    assert args.major_dimension == "COLUMNS"
+
+
+def test_move_dimension_strips_whitespace() -> None:
+    args = MoveDimensionInput(
+        spreadsheet_token="  x  ",
+        sheet_id="y",
+        start_index=0,
+        end_index=1,
+        destination_index=3,
+    )
+    assert args.spreadsheet_token == "x"
+
+
+def test_move_dimension_rejects_negative_index() -> None:
+    with pytest.raises(ValidationError):
+        MoveDimensionInput(
+            spreadsheet_token="x",
+            sheet_id="y",
+            start_index=-1,
+            end_index=2,
+            destination_index=3,
+        )
+
+
+def test_move_dimension_forbids_extra() -> None:
+    with pytest.raises(ValidationError):
+        MoveDimensionInput(
+            spreadsheet_token="x",
+            sheet_id="y",
+            start_index=0,
+            end_index=2,
+            destination_index=3,
+            extra_field="bad",
+        )
 
 
 # ── 电子表格快捷操作域 ──

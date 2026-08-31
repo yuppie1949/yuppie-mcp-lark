@@ -157,6 +157,16 @@ class _LarkMixinProtocol(Protocol):
         start_index: int,
         end_index: int,
     ) -> None: ...
+    async def move_dimension(
+        self,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        major_dimension: str = ...,
+        start_index: int,
+        end_index: int,
+        destination_index: int,
+    ) -> None: ...
     async def styles_batch_update(
         self, spreadsheet_token: str, data: list[dict[str, Any]]
     ) -> dict[str, Any]: ...

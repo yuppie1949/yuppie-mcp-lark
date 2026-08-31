@@ -98,6 +98,17 @@ class DeleteDimensionInput(BaseModel):
     end_index: int = Field(..., ge=1, description="结束索引（1-based 含）")
 
 
+class MoveDimensionInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+
+    spreadsheet_token: str = Field(..., min_length=1, description="电子表格 token")
+    sheet_id: str = Field(..., min_length=1, description="工作表 ID")
+    major_dimension: str = Field("COLUMNS", description="COLUMNS 或 ROWS，默认 COLUMNS")
+    start_index: int = Field(..., ge=0, description="起始索引（0-based 含）")
+    end_index: int = Field(..., ge=0, description="结束索引（0-based 含）")
+    destination_index: int = Field(..., ge=0, description="目标位置索引（0-based）")
+
+
 class UpdateDimensionInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
 
@@ -325,6 +336,30 @@ async def delete_dimension(args: DeleteDimensionInput) -> str:
         )
     except Exception as e:
         return f"❌ 删除失败：{e}"
+
+
+async def move_dimension(args: MoveDimensionInput) -> str:
+    try:
+        _t0 = time.time()
+        client = _get_client()
+        await client.move_dimension(
+            args.spreadsheet_token,
+            args.sheet_id,
+            major_dimension=args.major_dimension,
+            start_index=args.start_index,
+            end_index=args.end_index,
+            destination_index=args.destination_index,
+        )
+        _elapsed = time.time() - _t0
+        return (
+            f"✅ 移动完成\n\n"
+            f"- **耗时**: `{_elapsed:.1f}s`\n"
+            f"- **dimension**: `{args.major_dimension}`\n"
+            f"- **range**: `{args.start_index}` 到 `{args.end_index}`（0-based 含首尾）\n"
+            f"- **destination_index**: `{args.destination_index}`\n"
+        )
+    except Exception as e:
+        return f"❌ 移动失败：{e}"
 
 
 async def write_image(args: WriteImageInput) -> str:

@@ -193,6 +193,34 @@ class SheetsMixin:
             },
         )
 
+    async def move_dimension(
+        self: _LarkMixinProtocol,
+        spreadsheet_token: str,
+        sheet_id: str,
+        *,
+        major_dimension: str = "COLUMNS",
+        start_index: int,
+        end_index: int,
+        destination_index: int,
+    ) -> None:
+        """移动行/列（0-based 含首尾，单次最多 5000 行/列）。
+
+        行/列移动到目标位置后，原本在目标位置的行列会右移/下移。
+        文档: https://open.feishu.cn/document/server-docs/docs/sheets-v3/spreadsheet-sheet/move-dimension
+        """
+        await self._request(
+            "POST",
+            f"/open-apis/sheets/v3/spreadsheets/{spreadsheet_token}/sheets/{sheet_id}/move_dimension",
+            json_data={
+                "source": {
+                    "major_dimension": major_dimension,
+                    "start_index": start_index,
+                    "end_index": end_index,
+                },
+                "destination_index": destination_index,
+            },
+        )
+
     async def update_dimension(
         self: _LarkMixinProtocol,
         spreadsheet_token: str,
